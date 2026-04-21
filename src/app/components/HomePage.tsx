@@ -389,7 +389,7 @@ export function HomePage({
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.97 }}
             onClick={onStartWorkout}
-            className="w-full py-5 rounded-3xl flex items-center justify-center gap-3 mb-5 relative overflow-hidden"
+            className="w-full py-5 rounded-3xl mb-5 relative overflow-hidden"
             style={{
               background: "linear-gradient(135deg, #d9ff63 0%, #c9ff2f 60%, #b7ef1f 100%)",
               boxShadow: "0 12px 40px rgba(201,255,47,0.35), 0 4px 16px rgba(201,255,47,0.2)"
@@ -402,11 +402,11 @@ export function HomePage({
               animate={{ x: ["-120%", "220%"] }}
               transition={{ repeat: Infinity, duration: 3.5, ease: "linear", repeatDelay: 2 }}
             />
-            <div className="relative text-left">
-              <div className="text-black font-black text-xl">开始训练</div>
-              <div className="text-black/70 text-xs">点击即可开始记录</div>
+            <div className="relative z-10 text-center">
+              <div className="text-black font-black text-[2rem] leading-none">开始训练</div>
+              <div className="text-black/70 text-xs mt-1">点击即可开始记录</div>
             </div>
-            <ChevronRight className="relative w-5 h-5 text-black/70 ml-auto" />
+            <ChevronRight className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-black/70" />
           </motion.button>
 
           <motion.div
@@ -523,9 +523,12 @@ export function HomePage({
           {/* Recent Workouts */}
           {workouts.length > 0 && (
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-slate-800">最近训练</h3>
-                <span className="text-xs text-slate-400">在底部导航查看更多</span>
+              <div className="flex items-center justify-between mb-3 rounded-xl border border-zinc-700/70 bg-zinc-900/55 px-3 py-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="inline-block h-5 w-1 rounded-full bg-lime-300 shadow-[0_0_10px_rgba(201,255,47,0.55)]" />
+                  <h3 className="font-black text-zinc-100 tracking-wide">最近训练</h3>
+                </div>
+                <span className="text-xs text-zinc-300">在底部导航查看更多</span>
               </div>
               <div className="space-y-2.5">
                 {[...workouts].reverse().slice(0, 4).map((workout, i) => {
