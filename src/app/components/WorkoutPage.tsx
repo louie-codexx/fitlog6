@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import type { WorkoutSet, WorkoutRecord } from "../App";
+import { BOTTOM_SPACING } from "../layoutSpacing";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ interface MuscleGroup {
 const muscleGroups: MuscleGroup[] = [
   {
     name: "胸", icon: "💪",
-    color: "#ef4444", light: "#fff1f2", border: "#fecaca", text: "#dc2626",
+    color: "#ef4444", light: "#1b1517", border: "#5a2a33", text: "#fb7185",
     exercises: [
       { name: "平板卧推", icon: "🏋️", tip: "肩胛骨夹紧下沉，保持稳定" },
       { name: "上斜卧推", icon: "📐", tip: "上胸重点发力，控制下放" },
@@ -45,7 +46,7 @@ const muscleGroups: MuscleGroup[] = [
   },
   {
     name: "背", icon: "🎯",
-    color: "#2563eb", light: "#eff6ff", border: "#bfdbfe", text: "#1d4ed8",
+    color: "#2563eb", light: "#131a24", border: "#24456c", text: "#60a5fa",
     exercises: [
       { name: "引体向上", icon: "⬆️", tip: "肩胛骨下沉带动，全程控制" },
       { name: "杠铃划船", icon: "🚣", tip: "背部收紧，肘向后上方拉" },
@@ -59,7 +60,7 @@ const muscleGroups: MuscleGroup[] = [
   },
   {
     name: "肩", icon: "🔺",
-    color: "#d97706", light: "#fffbeb", border: "#fde68a", text: "#b45309",
+    color: "#d97706", light: "#1d1a12", border: "#6b4a1f", text: "#fbbf24",
     exercises: [
       { name: "哑铃推举", icon: "⬆️", tip: "全程控制节奏，不要弓背" },
       { name: "杠铃推举", icon: "🏋️", tip: "核心保持稳定，腿不借力" },
@@ -73,7 +74,7 @@ const muscleGroups: MuscleGroup[] = [
   },
   {
     name: "腿", icon: "🦵",
-    color: "#059669", light: "#ecfdf5", border: "#a7f3d0", text: "#047857",
+    color: "#059669", light: "#121d18", border: "#1f5d45", text: "#34d399",
     exercises: [
       { name: "深蹲",     icon: "⬇️", tip: "膝盖跟随脚尖方向，背部挺直" },
       { name: "前蹲",     icon: "📐", tip: "上身更直立，股四头更刺激" },
@@ -88,7 +89,7 @@ const muscleGroups: MuscleGroup[] = [
   },
   {
     name: "手臂", icon: "💪",
-    color: "#7c3aed", light: "#faf5ff", border: "#ddd6fe", text: "#6d28d9",
+    color: "#7c3aed", light: "#1a1324", border: "#4c2d7a", text: "#c084fc",
     exercises: [
       { name: "杠铃弯举", icon: "💪", tip: "避免身体前后摆动借力" },
       { name: "哑铃弯举", icon: "🔨", tip: "旋转前臂充分收缩二头" },
@@ -102,7 +103,7 @@ const muscleGroups: MuscleGroup[] = [
   },
   {
     name: "有氧-户外", icon: "🌤️",
-    color: "#0891b2", light: "#ecfeff", border: "#a5f3fc", text: "#0e7490",
+    color: "#0891b2", light: "#102024", border: "#0f5a67", text: "#67e8f9",
     isCardio: true,
     exercises: [
       { name: "跑步", icon: "🏃", tip: "保持稳定配速，腹式呼吸" },
@@ -115,7 +116,7 @@ const muscleGroups: MuscleGroup[] = [
   },
   {
     name: "有氧-户内", icon: "🏠",
-    color: "#0ea5a5", light: "#f0fdfa", border: "#99f6e4", text: "#0f766e",
+    color: "#0ea5a5", light: "#102020", border: "#0f6660", text: "#5eead4",
     isCardio: true,
     exercises: [
       { name: "椭圆机", icon: "🔄", tip: "低冲击有氧，膝盖友好" },
@@ -145,7 +146,6 @@ interface WorkoutPageProps {
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: WorkoutPageProps) {
-  const interactionBottomSpace = "calc(9rem + env(safe-area-inset-bottom))";
   const [blocks, setBlocks] = useState<WorkoutBlock[]>([]);
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [showPicker, setShowPicker] = useState(false);
@@ -346,7 +346,10 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
       </AnimatePresence>
 
       {/* Content */}
-      <div className="max-w-lg mx-auto px-4 py-5 pb-52">
+      <div
+        className="max-w-lg mx-auto px-4 py-5"
+        style={{ paddingBottom: BOTTOM_SPACING.pageContent }}
+      >
         <div className="space-y-3">
           <AnimatePresence mode="popLayout">
             {blocks.map(block => {
@@ -644,7 +647,7 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                 style={{
                   maxHeight: "calc(90vh - 24px)",
                   scrollbarWidth: "none",
-                  paddingBottom: interactionBottomSpace,
+                  paddingBottom: BOTTOM_SPACING.interactionPanel,
                 }}
               >
                 <AnimatePresence mode="wait">
@@ -656,8 +659,8 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                     >
                       <div className="flex items-center justify-between mb-6">
                         <div>
-                          <h2 className="text-xl font-black text-slate-800">选择训练类型</h2>
-                          <p className="text-sm text-slate-400 mt-0.5">选择你要训练的部位或类型</p>
+                          <h2 className="text-xl font-black text-zinc-100">选择训练类型</h2>
+                          <p className="text-sm text-zinc-300 mt-0.5">选择你要训练的部位或类型</p>
                         </div>
                         <button onClick={() => { setShowPicker(false); setPickerMuscle(null); }}
                           className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors">
@@ -666,7 +669,7 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                       </div>
 
                       {/* Strength */}
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                      <div className="flex items-center gap-2 text-xs font-bold text-zinc-300 uppercase tracking-wider mb-3">
                         <Dumbbell className="w-3.5 h-3.5" /> 力量训练
                       </div>
                       <div className="grid grid-cols-2 gap-2.5 mb-4">
@@ -679,14 +682,14 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                             style={{ background: mg.light, borderColor: mg.border, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
                           >
                             <div className="text-3xl mb-2">{mg.icon}</div>
-                            <div className="font-bold text-slate-800">{mg.name}</div>
-                            <div className="text-xs mt-0.5" style={{ color: mg.color }}>{mg.exercises.length} 个动作</div>
+                            <div className="font-bold text-zinc-100">{mg.name}</div>
+                            <div className="text-xs mt-0.5 font-semibold" style={{ color: mg.text }}>{mg.exercises.length} 个动作</div>
                           </motion.button>
                         ))}
                       </div>
 
                       {/* Cardio */}
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                      <div className="flex items-center gap-2 text-xs font-bold text-zinc-300 uppercase tracking-wider mb-3">
                         <Wind className="w-3.5 h-3.5" /> 有氧运动
                       </div>
                       {muscleGroups.filter(m => m.isCardio).map(mg => (
@@ -698,8 +701,8 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                         >
                           <span className="text-3xl">{mg.icon}</span>
                           <div className="text-left flex-1">
-                            <div className="font-bold text-slate-800">{mg.name}</div>
-                            <div className="text-xs mt-0.5" style={{ color: mg.color }}>{mg.exercises.length} 种运动可选</div>
+                            <div className="font-bold text-zinc-100">{mg.name}</div>
+                            <div className="text-xs mt-0.5 font-semibold" style={{ color: mg.text }}>{mg.exercises.length} 种运动可选</div>
                           </div>
                           <ChevronRight className="w-5 h-5 text-slate-400" />
                         </motion.button>
@@ -717,11 +720,11 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                           <ArrowLeft className="w-4 h-4 text-slate-500" />
                         </button>
                         <div>
-                          <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
+                          <h2 className="text-xl font-black text-zinc-100 flex items-center gap-2">
                             <span>{pickerMuscleData?.icon}</span>
                             <span>{pickerMuscle}</span>
                           </h2>
-                          <p className="text-xs text-slate-400">选择训练动作</p>
+                          <p className="text-xs text-zinc-300">选择训练动作</p>
                         </div>
                       </div>
 
@@ -742,8 +745,8 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                                 {ex.icon}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="font-bold text-slate-800">{ex.name}</div>
-                                <div className="text-xs text-slate-400 mt-0.5 truncate">{ex.tip}</div>
+                                <div className="font-bold text-zinc-100">{ex.name}</div>
+                                <div className="text-xs text-zinc-300 mt-0.5 truncate">{ex.tip}</div>
                               </div>
                               <div className="flex-shrink-0 text-right">
                                 {pr > 0 ? (

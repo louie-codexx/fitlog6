@@ -4,6 +4,7 @@ import {
   ChevronRight, Dumbbell, Play
 } from "lucide-react";
 import type { WorkoutRecord } from "../App";
+import { BOTTOM_SPACING } from "../layoutSpacing";
 
 const QUOTES = [
   { text: "Just Do It.", icon: "✔️" },
@@ -364,7 +365,10 @@ export function HomePage({
       <div className="relative -mt-3 z-10 rounded-t-[28px] overflow-hidden"
         style={{ background: "linear-gradient(160deg, #13131b 0%, #0d0d13 60%, #09090d 100%)" }}
       >
-        <div className="max-w-lg mx-auto px-5 pt-7 pb-28">
+        <div
+          className="max-w-lg mx-auto px-5 pt-7"
+          style={{ paddingBottom: BOTTOM_SPACING.pageContent }}
+        >
 
           {/* START WORKOUT Button */}
           <motion.button

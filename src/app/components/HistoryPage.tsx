@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, Calendar, TrendingUp, Trophy, Filter, ChevronDown, ChevronUp, Search, X, Trash2 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import type { WorkoutRecord } from "../App";
+import { BOTTOM_SPACING } from "../layoutSpacing";
 
 const MUSCLE_COLORS: Record<string, { bg: string; text: string; border: string; dot: string }> = {
   "胸":   { bg: "bg-rose-50",    text: "text-rose-600",   border: "border-rose-200",   dot: "bg-rose-500" },
@@ -209,7 +210,10 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-5 pb-36">
+      <div
+        className="max-w-lg mx-auto px-4 py-5"
+        style={{ paddingBottom: BOTTOM_SPACING.pageContent }}
+      >
         {workouts.length === 0 ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-24">
             <div className="w-20 h-20 rounded-3xl mx-auto mb-5 flex items-center justify-center text-4xl bg-white shadow-sm border border-slate-100">📭</div>

@@ -7,6 +7,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from "recharts";
 import type { WorkoutRecord } from "../App";
+import { BOTTOM_SPACING } from "../layoutSpacing";
 
 const PIE_COLORS = ["#2563eb", "#7c3aed", "#0891b2", "#059669", "#d97706", "#ef4444", "#ea580c"];
 
@@ -348,19 +349,63 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
   const pieData = Object.entries(muscleDist).sort(([,a],[,b]) => b-a)
     .map(([name, value]) => ({ name: `${MUSCLE_EMOJI[name] ?? ""} ${name}`, value }));
 
-  // Achievements
-  const achievements = [
-    { icon: "🌟", title: "破冰之旅", desc: "完成第一次训练", done: workouts.length >= 1 },
-    { icon: "🔥", title: "连续3天", desc: "保持3天连续打卡", done: streak >= 3 },
-    { icon: "⚡", title: "一周不断", desc: "连续训练整整7天", done: streak >= 7 },
-    { icon: "🏆", title: "突破纪录", desc: "突破个人最高记录", done: prBreaks >= 1 },
-    { icon: "💪", title: "力量吨级", desc: "本月总量超过1000kg", done: totalVolume >= 1000 },
-    { icon: "🎯", title: "全面发展", desc: "涉及5个以上训练部位", done: Object.keys(muscleDist).length >= 5 },
-    { icon: "🏃", title: "有氧达人", desc: "累计完成120分钟有氧", done: cardioMinutes >= 120 },
-    { icon: "📅", title: "月度勇士", desc: "本月训练超过20次", done: monthWorkouts.length >= 20 },
+  // Infinite achievements (grow without an upper limit)
+  const uniqueExerciseCount = new Set(workouts.map(w => w.exercise)).size;
+  const getInfiniteTier = (value: number, baseTarget: number, growth: number) => {
+    let level = 0;
+    let nextTarget = baseTarget;
+    while (value >= nextTarget) {
+      level += 1;
+      nextTarget = Math.round(baseTarget * Math.pow(growth, level));
+      if (level > 500) break;
+    }
+    const prevTarget = level === 0 ? 0 : Math.round(baseTarget * Math.pow(growth, level - 1));
+    const span = Math.max(1, nextTarget - prevTarget);
+    const progress = Math.max(0, Math.min(1, (value - prevTarget) / span));
+    return { level, nextTarget, progress };
+  };
+  const infiniteAchievements = [
+    {
+      key: "streak",
+      icon: "🔥",
+      title: "连续训练次数",
+      desc: "连续打卡天数越高，等级持续提升",
+      value: streak,
+      unit: "天",
+      ...getInfiniteTier(streak, 3, 1.5),
+    },
+    {
+      key: "strength",
+      icon: "🏋️",
+      title: "力量训练总重量",
+      desc: "累计力量总量（weight × reps）",
+      value: Math.round(totalAllStrengthVolume),
+      unit: "kg",
+      ...getInfiniteTier(totalAllStrengthVolume, 2000, 1.6),
+    },
+    {
+      key: "exercise",
+      icon: "🧩",
+      title: "解锁训练动作",
+      desc: "完成过的不同动作名称数量",
+      value: uniqueExerciseCount,
+      unit: "个",
+      ...getInfiniteTier(uniqueExerciseCount, 8, 1.4),
+    },
+    {
+      key: "cardio",
+      icon: "🏃",
+      title: "有氧累计时长",
+      desc: "累计有氧训练时长",
+      value: Math.round(totalAllCardioMinutes),
+      unit: "min",
+      ...getInfiniteTier(totalAllCardioMinutes, 180, 1.6),
+    },
   ];
-
-  const unlockedCount = achievements.filter(a => a.done).length;
+  const totalAchievementLevel = infiniteAchievements.reduce((sum, item) => sum + item.level, 0);
+  const avgAchievementProgress = infiniteAchievements.length
+    ? infiniteAchievements.reduce((sum, item) => sum + item.progress, 0) / infiniteAchievements.length
+    : 0;
 
   return (
     <div className="min-h-screen" style={{ background: "radial-gradient(circle at top, #1a1a24 0%, #0b0b0f 55%, #08080b 100%)" }}>
@@ -379,7 +424,10 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-5 pb-36">
+      <div
+        className="max-w-lg mx-auto px-4 py-5"
+        style={{ paddingBottom: BOTTOM_SPACING.pageContent }}
+      >
         {workouts.length === 0 ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-24">
             <div className="w-20 h-20 rounded-3xl mx-auto mb-5 flex items-center justify-center text-4xl bg-white shadow-sm border border-slate-100">📊</div>
@@ -569,7 +617,10 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
                   initial={{ opacity: 0, y: 20, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   className="w-full max-w-md rounded-3xl border border-indigo-200 bg-white p-5 shadow-2xl overflow-y-auto"
-                  style={{ maxHeight: "calc(100vh - 2.5rem)", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
+                  style={{
+                    maxHeight: "calc(100vh - 2.5rem)",
+                    paddingBottom: BOTTOM_SPACING.modalContent,
+                  }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <p className="text-[11px] text-lime-300">里程碑故事卡</p>
@@ -718,46 +769,55 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
               style={{ boxShadow: "0 4px 24px rgba(79,70,229,0.08)" }}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center">
-                    <Award className="w-4 h-4 text-amber-500" />
+                  <div className="w-8 h-8 rounded-xl bg-lime-300/20 border border-lime-300/40 flex items-center justify-center">
+                    <Award className="w-4 h-4 text-lime-300" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-slate-800 text-sm">成就系统</h2>
-                    <p className="text-xs text-slate-400">{unlockedCount}/{achievements.length} 已解锁</p>
+                    <h2 className="font-bold text-zinc-100 text-sm">成就系统（无限成长）</h2>
+                    <p className="text-xs text-zinc-300">累计等级 Lv.{totalAchievementLevel}</p>
                   </div>
                 </div>
-                <span className="text-sm font-black text-indigo-600">{Math.round(unlockedCount / achievements.length * 100)}%</span>
+                <span className="text-sm font-black text-lime-300">{Math.round(avgAchievementProgress * 100)}%</span>
               </div>
 
               {/* Progress bar */}
-              <div className="h-2 bg-slate-100 rounded-full mb-5 overflow-hidden">
+              <div className="h-2 bg-zinc-800 rounded-full mb-5 overflow-hidden">
                 <motion.div
-                  initial={{ width: 0 }} animate={{ width: `${(unlockedCount / achievements.length) * 100}%` }}
+                  initial={{ width: 0 }} animate={{ width: `${avgAchievementProgress * 100}%` }}
                   transition={{ delay: 0.6, duration: 0.8, ease: "easeOut" }}
                   className="h-full rounded-full"
-                  style={{ background: "linear-gradient(90deg, #2563eb, #7c3aed)" }}
+                  style={{ background: "linear-gradient(90deg, #d9ff63, #c9ff2f)" }}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
-                {achievements.map((a, i) => (
-                  <motion.div key={a.title}
+                {infiniteAchievements.map((a, i) => (
+                  <motion.div key={a.key}
                     initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.38 + i * 0.05 }}
-                    className={`p-4 rounded-2xl border transition-all ${
-                      a.done
-                        ? "border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50"
-                        : "border-slate-100 bg-slate-50"
-                    }`}
+                    className="p-4 rounded-2xl border transition-all border-zinc-700 bg-zinc-900/80"
                   >
-                    <div className={`text-2xl mb-1.5 ${!a.done ? "grayscale opacity-40" : ""}`}>{a.icon}</div>
-                    <div className={`font-bold text-sm ${a.done ? "text-slate-800" : "text-slate-400"}`}>{a.title}</div>
-                    <div className={`text-xs mt-0.5 leading-relaxed ${a.done ? "text-slate-500" : "text-slate-300"}`}>{a.desc}</div>
-                    {a.done && (
-                      <div className="mt-2 flex items-center gap-1 text-xs text-amber-600 font-semibold">
-                        <Star className="w-3 h-3" /> 已解锁
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="text-2xl">{a.icon}</div>
+                      <div className="text-[11px] px-2 py-0.5 rounded-full border border-lime-300/40 text-lime-300 bg-lime-300/10">
+                        Lv.{a.level}
                       </div>
-                    )}
+                    </div>
+                    <div className="font-bold text-sm text-zinc-100">{a.title}</div>
+                    <div className="text-xs mt-0.5 leading-relaxed text-zinc-300">{a.desc}</div>
+                    <div className="mt-2 text-lg font-black text-lime-300">
+                      {a.value}
+                      <span className="text-xs font-semibold text-lime-200 ml-1">{a.unit}</span>
+                    </div>
+                    <div className="mt-2 text-[11px] text-zinc-400">
+                      下一等级目标：{a.nextTarget}{a.unit}
+                    </div>
+                    <div className="mt-1.5 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${a.progress * 100}%`, background: "linear-gradient(90deg, #d9ff63, #c9ff2f)" }}
+                      />
+                    </div>
                   </motion.div>
                 ))}
               </div>

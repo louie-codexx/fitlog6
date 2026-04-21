@@ -3,6 +3,7 @@ import { HomePage } from "./components/HomePage";
 import { WorkoutPage } from "./components/WorkoutPage";
 import { HistoryPage } from "./components/HistoryPage";
 import { SummaryPage } from "./components/SummaryPage";
+import { BOTTOM_SPACING } from "./layoutSpacing";
 
 export interface WorkoutSet {
   weight?: number;
@@ -133,7 +134,10 @@ export default function App() {
   };
 
   return (
-    <div className="size-full pb-40 preview-theme">
+    <div
+      className="size-full preview-theme"
+      style={{ paddingBottom: BOTTOM_SPACING.appShell }}
+    >
       <style>{`
         .preview-theme {
           background: #0b0b0e;
@@ -198,7 +202,7 @@ export default function App() {
         style={{
           borderColor: "#2a2a33",
           background: "rgba(16,16,22,0.95)",
-          paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
+          paddingBottom: BOTTOM_SPACING.navSafeInset,
         }}
       >
         <div className="max-w-lg mx-auto grid grid-cols-4 gap-1 px-2 py-2">
