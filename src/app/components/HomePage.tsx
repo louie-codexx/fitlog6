@@ -207,25 +207,25 @@ export function HomePage({
   return (
     <div className="min-h-screen" style={{ background: "radial-gradient(circle at top, #1a1a24 0%, #0b0b0f 55%, #08080b 100%)" }}>
       {/* Hero gradient section */}
-      <div className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1d4ed8 0%, #4f46e5 60%, #7c3aed 100%)" }}>
+      <div className="relative overflow-hidden" style={{ background: "linear-gradient(145deg, #12121a 0%, #0d0d14 65%, #09090e 100%)" }}>
         {/* Decorative circles */}
         <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full opacity-20"
-          style={{ background: "radial-gradient(circle, #ffffff 0%, transparent 70%)" }} />
+          style={{ background: "radial-gradient(circle, #c9ff2f 0%, transparent 70%)" }} />
         <div className="absolute bottom-0 -left-12 w-48 h-48 rounded-full opacity-15"
-          style={{ background: "radial-gradient(circle, #93c5fd 0%, transparent 70%)" }} />
+          style={{ background: "radial-gradient(circle, #7cf4d6 0%, transparent 70%)" }} />
         <div className="absolute top-1/2 right-12 w-32 h-32 rounded-full opacity-10"
-          style={{ background: "radial-gradient(circle, #c4b5fd 0%, transparent 70%)" }} />
+          style={{ background: "radial-gradient(circle, #ffffff 0%, transparent 70%)" }} />
 
         <div className="relative max-w-lg mx-auto px-5 pt-14 pb-10">
           {/* Top bar */}
           <div className="flex items-start justify-between mb-6">
             <div>
-              <p className="text-blue-200 text-sm">{dateStr}</p>
+              <p className="text-zinc-400 text-sm">{dateStr}</p>
               <h2 className="text-white mt-1 flex items-center gap-2">
                 <span className="text-xl">{greeting.emoji}</span>
                 <span className="font-bold text-lg">{greeting.text}</span>
               </h2>
-              <p className="text-blue-200 text-xs mt-0.5">{greeting.sub}</p>
+              <p className="text-zinc-400 text-xs mt-0.5">{greeting.sub}</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <motion.div
@@ -242,7 +242,7 @@ export function HomePage({
           {/* App name */}
           <div className="mb-6">
             <h1 className="text-5xl font-black text-white tracking-tight">FitLog</h1>
-            <p className="text-blue-200 text-sm mt-1.5">像打游戏一样记录训练 · 见证进步</p>
+            <p className="text-zinc-400 text-sm mt-1.5">简洁、力量感和速度感并存的健身记录体验</p>
           </div>
 
           <div className="mb-5 rounded-2xl border border-white/25 bg-white/10 p-3 backdrop-blur-sm">
@@ -286,9 +286,10 @@ export function HomePage({
                   onClick={() => onSwitchUser(user)}
                   className={`h-8 rounded-lg text-xs font-semibold border ${
                     user === currentUser
-                      ? "bg-white text-indigo-700 border-white"
-                      : "bg-white/15 text-blue-100 border-white/20 hover:bg-white/25"
+                      ? "text-black border-lime-200"
+                      : "bg-white/15 text-zinc-300 border-white/20 hover:bg-white/25"
                   }`}
+                  style={user === currentUser ? { background: "#c9ff2f" } : {}}
                 >
                   {user}
                 </button>
@@ -312,7 +313,7 @@ export function HomePage({
                 <p className="text-white font-bold text-base">
                   {todayDone ? `今日已完成 ${todaySets} 组` : "今天还没有训练"}
                 </p>
-                <p className="text-blue-100 text-xs mt-0.5">
+                <p className="text-zinc-300 text-xs mt-0.5">
                   {todayDone ? `本周 ${weekDays} 天 · 连续打卡 ${streak} 天 🔥` : "开始记录今日训练吧"}
                 </p>
               </div>
@@ -327,7 +328,7 @@ export function HomePage({
                       ? "bg-emerald-400 text-white shadow-md"
                       : d.isToday
                       ? "bg-white/30 text-white border-2 border-white/60"
-                      : "bg-white/10 text-blue-200"
+                      : "bg-white/10 text-zinc-300"
                   }`}>
                     {d.has ? "✓" : d.label}
                   </div>
@@ -343,16 +344,16 @@ export function HomePage({
             className="grid grid-cols-3 gap-2.5"
           >
             {[
-              { value: streak, label: "连续天", icon: "🔥", color: "bg-orange-400/25" },
-              { value: weekDays, label: "本周天", icon: "📅", color: "bg-sky-400/25" },
-              { value: workouts.length, label: "总记录", icon: "⚡", color: "bg-violet-400/25" },
+              { value: streak, label: "连续天", icon: "🔥", color: "bg-black/25" },
+              { value: weekDays, label: "本周天", icon: "📅", color: "bg-black/25" },
+              { value: workouts.length, label: "总记录", icon: "⚡", color: "bg-black/25" },
             ].map(s => (
               <div key={s.label}
                 className={`${s.color} rounded-2xl py-3 px-2 text-center border border-white/20 backdrop-blur-sm`}
               >
                 <div className="text-xl mb-0.5">{s.icon}</div>
-                <div className="text-white font-black text-2xl">{s.value}</div>
-                <div className="text-blue-100 text-xs mt-0.5">{s.label}</div>
+                <div className="text-lime-300 font-black text-2xl">{s.value}</div>
+                <div className="text-zinc-300 text-xs mt-0.5">{s.label}</div>
               </div>
             ))}
           </motion.div>
@@ -373,8 +374,8 @@ export function HomePage({
             onClick={onStartWorkout}
             className="w-full py-5 rounded-3xl flex items-center justify-center gap-3 mb-5 relative overflow-hidden"
             style={{
-              background: "linear-gradient(135deg, #2563eb 0%, #4f46e5 60%, #7c3aed 100%)",
-              boxShadow: "0 12px 48px rgba(79,70,229,0.45), 0 4px 16px rgba(37,99,235,0.3)"
+              background: "linear-gradient(135deg, #d9ff63 0%, #c9ff2f 60%, #b7ef1f 100%)",
+              boxShadow: "0 12px 40px rgba(201,255,47,0.35), 0 4px 16px rgba(201,255,47,0.2)"
             }}
           >
             {/* Animated shine */}
@@ -384,14 +385,14 @@ export function HomePage({
               animate={{ x: ["-120%", "220%"] }}
               transition={{ repeat: Infinity, duration: 3.5, ease: "linear", repeatDelay: 2 }}
             />
-            <div className="relative w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center">
-              <Play className="w-5 h-5 text-white ml-0.5" />
+            <div className="relative w-11 h-11 rounded-2xl bg-black/15 flex items-center justify-center">
+              <Play className="w-5 h-5 text-black ml-0.5" />
             </div>
             <div className="relative text-left">
-              <div className="text-white font-black text-xl">开始训练</div>
-              <div className="text-blue-100 text-xs">点击即可开始记录</div>
+              <div className="text-black font-black text-xl">开始训练</div>
+              <div className="text-black/70 text-xs">点击即可开始记录</div>
             </div>
-            <ChevronRight className="relative w-5 h-5 text-blue-200 ml-auto" />
+            <ChevronRight className="relative w-5 h-5 text-black/70 ml-auto" />
           </motion.button>
 
           <motion.div
@@ -406,7 +407,7 @@ export function HomePage({
                   type="checkbox"
                   checked={reminderEnabled}
                   onChange={(e) => setReminderEnabled(e.target.checked)}
-                  className="w-4 h-4 accent-indigo-600"
+                  className="w-4 h-4 accent-lime-400"
                 />
                 <span className="text-xs text-slate-600">{reminderEnabled ? "已开启" : "已关闭"}</span>
               </label>

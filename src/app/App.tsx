@@ -133,7 +133,7 @@ export default function App() {
   };
 
   return (
-    <div className="size-full pb-36 preview-theme">
+    <div className="size-full pb-40 preview-theme">
       <style>{`
         .preview-theme {
           background: #0b0b0e;
@@ -216,7 +216,15 @@ export default function App() {
                 className={`rounded-xl py-2 text-center transition-all ${
                   active ? "text-black shadow-md" : "text-zinc-400 hover:bg-zinc-900"
                 }`}
-                style={active ? { background: "#c9ff2f" } : {}}
+                style={
+                  active
+                    ? {
+                        background: "#c9ff2f",
+                        border: "1px solid rgba(255,255,255,0.5)",
+                        boxShadow: "0 0 0 2px rgba(201,255,47,0.25)",
+                      }
+                    : {}
+                }
               >
                 <div className="text-base leading-none">{tab.icon}</div>
                 <div className="text-xs font-semibold mt-1">{tab.label}</div>

@@ -379,7 +379,7 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-5 pb-28">
+      <div className="max-w-lg mx-auto px-4 py-5 pb-36">
         {workouts.length === 0 ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-24">
             <div className="w-20 h-20 rounded-3xl mx-auto mb-5 flex items-center justify-center text-4xl bg-white shadow-sm border border-slate-100">📊</div>
@@ -437,7 +437,7 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
                   <h2 className="font-bold text-slate-800 text-sm">长期成长轨迹</h2>
                   <p className="text-xs text-slate-400">过去6个月训练次数与负荷变化</p>
                 </div>
-                <span className="text-xs text-indigo-600 font-semibold">{profileLevel}</span>
+                <span className="text-xs text-lime-300 font-semibold">{profileLevel}</span>
               </div>
               <ResponsiveContainer width="100%" height={190}>
                 <LineChart data={monthlyGrowthData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
@@ -540,23 +540,23 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
                         setActiveMilestoneKey(m.key);
                         setModalMilestoneKey(m.key);
                       }}
-                      className={`w-full text-left rounded-2xl px-2 py-1.5 transition ${activeMilestone?.key === m.key ? "bg-indigo-50/80" : "hover:bg-slate-50"}`}
+                      className={`w-full text-left rounded-2xl px-2 py-1.5 transition ${activeMilestone?.key === m.key ? "bg-lime-200/20" : "hover:bg-slate-50"}`}
                     >
                       <div className="flex gap-3">
                         <div className="flex flex-col items-center">
-                          <div className="w-3 h-3 rounded-full bg-indigo-500 mt-1.5" />
-                          {idx !== milestones.length - 1 && <div className="w-px flex-1 bg-indigo-100 mt-1" />}
+                          <div className="w-3 h-3 rounded-full bg-lime-300 mt-1.5" />
+                          {idx !== milestones.length - 1 && <div className="w-px flex-1 bg-lime-300/30 mt-1" />}
                         </div>
                         <div className="pb-2">
                           <p className="text-sm font-bold text-slate-700">{m.title}</p>
                           <p className="text-xs text-slate-500 mt-0.5">{m.desc}</p>
-                          <p className="text-[11px] text-indigo-500 mt-1">{m.date}</p>
+                          <p className="text-[11px] text-lime-300 mt-1">{m.date}</p>
                         </div>
                       </div>
                     </button>
                   ))}
                 </div>
-                <p className="mt-3 text-xs text-indigo-500">点击任意里程碑可查看故事卡详情</p>
+                <p className="mt-3 text-xs text-lime-300">点击任意里程碑可查看故事卡详情</p>
               </motion.div>
             )}
 
@@ -568,13 +568,14 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
                 <motion.div
                   initial={{ opacity: 0, y: 20, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className="w-full max-w-md rounded-3xl border border-indigo-200 bg-white p-5 shadow-2xl"
+                  className="w-full max-w-md rounded-3xl border border-indigo-200 bg-white p-5 shadow-2xl overflow-y-auto"
+                  style={{ maxHeight: "calc(100vh - 2.5rem)", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <p className="text-[11px] text-indigo-500">里程碑故事卡</p>
+                  <p className="text-[11px] text-lime-300">里程碑故事卡</p>
                   <h3 className="font-black text-slate-800 mt-1">{modalMilestone.title}</h3>
                   <p className="text-xs text-slate-500 mt-1">{modalMilestone.desc}</p>
-                  <p className="text-xs text-indigo-600 mt-1.5">{modalMilestone.date}</p>
+                  <p className="text-xs text-lime-300 mt-1.5">{modalMilestone.date}</p>
                   <div className="mt-3 rounded-2xl border border-indigo-100 bg-indigo-50 p-3 space-y-1.5">
                     {modalMilestone.details.length > 0 ? modalMilestone.details.map(detail => (
                       <p key={detail} className="text-xs text-indigo-700">{detail}</p>
@@ -585,7 +586,7 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
                   <button
                     type="button"
                     onClick={() => setModalMilestoneKey(null)}
-                    className="mt-4 w-full rounded-xl bg-indigo-600 text-white py-2 text-sm font-bold"
+                    className="mt-4 w-full rounded-xl bg-lime-300 text-black py-2 text-sm font-bold"
                   >
                     关闭
                   </button>

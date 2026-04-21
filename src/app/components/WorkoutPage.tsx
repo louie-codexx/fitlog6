@@ -129,9 +129,9 @@ const muscleGroups: MuscleGroup[] = [
 
 const REPS_CHIPS = [5, 6, 8, 10, 12, 15, 20];
 const INTENSITY_OPTIONS = [
-  { key: "easy" as const, label: "轻松 🟢", active: "bg-emerald-500 text-white border-emerald-400", inactive: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  { key: "medium" as const, label: "中等 🟡", active: "bg-amber-500 text-white border-amber-400", inactive: "bg-amber-50 text-amber-700 border-amber-200" },
-  { key: "hard" as const, label: "高强 🔴", active: "bg-red-500 text-white border-red-400", inactive: "bg-red-50 text-red-700 border-red-200" },
+  { key: "easy" as const, label: "轻松 🟢", active: "bg-lime-300 text-black border-lime-200", inactive: "bg-zinc-900 text-zinc-300 border-zinc-700" },
+  { key: "medium" as const, label: "中等 🟡", active: "bg-lime-300 text-black border-lime-200", inactive: "bg-zinc-900 text-zinc-300 border-zinc-700" },
+  { key: "hard" as const, label: "高强 🔴", active: "bg-lime-300 text-black border-lime-200", inactive: "bg-zinc-900 text-zinc-300 border-zinc-700" },
 ];
 
 // ─── Props ──────────────────────────────────────────────────────────────────
@@ -145,6 +145,7 @@ interface WorkoutPageProps {
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: WorkoutPageProps) {
+  const interactionBottomSpace = "calc(9rem + env(safe-area-inset-bottom))";
   const [blocks, setBlocks] = useState<WorkoutBlock[]>([]);
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [showPicker, setShowPicker] = useState(false);
@@ -265,8 +266,8 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
               transition={{ duration: 0.9, ease: "easeOut" }}
               className="relative px-10 py-8 rounded-3xl text-center overflow-hidden border-2 border-white/80"
               style={{
-                background: "linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)",
-                boxShadow: "0 24px 80px rgba(124,58,237,0.6), 0 0 0 8px rgba(79,70,229,0.15)"
+                background: "linear-gradient(135deg, #12121a 0%, #0c0c12 100%)",
+                boxShadow: "0 24px 80px rgba(0,0,0,0.6), 0 0 0 8px rgba(201,255,47,0.16)"
               }}
             >
               <motion.div animate={{ scale: [1, 1.35, 1], rotate: [0, 10, -10, 0] }} transition={{ duration: 0.7, delay: 0.05 }}>
@@ -280,10 +281,10 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
               >
                 NEW PR
               </motion.p>
-              <p className="text-blue-100 mt-1.5 font-semibold">
+              <p className="text-lime-300 mt-1.5 font-semibold">
                 {prFlash.name} · {prFlash.value}{prFlash.isCardio ? "min" : "kg"}
               </p>
-              <p className="text-blue-200 text-sm mt-1">个人最佳成绩已刷新</p>
+              <p className="text-zinc-300 text-sm mt-1">个人最佳成绩已刷新</p>
             </motion.div>
           </motion.div>
         )}
@@ -310,7 +311,7 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                     key={totalSets}
                     initial={{ scale: 0.8, y: 3, opacity: 0.4 }}
                     animate={{ scale: 1, y: 0, opacity: 1 }}
-                    className="text-indigo-600 font-semibold"
+                    className="text-lime-300 font-semibold"
                   >
                     · {totalSets} 组
                   </motion.span>
@@ -322,8 +323,8 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
           {canFinish && (
             <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
               onClick={finishWorkout}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm text-white shadow-lg"
-              style={{ background: "linear-gradient(135deg, #10b981, #059669)", boxShadow: "0 4px 16px rgba(5,150,105,0.4)" }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm text-black shadow-lg"
+              style={{ background: "linear-gradient(135deg, #d9ff63, #c9ff2f)", boxShadow: "0 4px 16px rgba(201,255,47,0.35)" }}
             >
               <Check className="w-4 h-4" /> 完成训练
             </motion.button>
@@ -345,7 +346,7 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
       </AnimatePresence>
 
       {/* Content */}
-      <div className="max-w-lg mx-auto px-4 py-5 pb-44">
+      <div className="max-w-lg mx-auto px-4 py-5 pb-52">
         <div className="space-y-3">
           <AnimatePresence mode="popLayout">
             {blocks.map(block => {
@@ -481,9 +482,9 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                                 {REPS_CHIPS.map(chip => (
                                   <button key={chip} onClick={() => setReps(chip)}
                                     className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold border transition-all duration-150 ${
-                                      reps === chip ? "text-white border-transparent shadow-md scale-105" : "text-slate-600 border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50"
+                                      reps === chip ? "text-black border-lime-200 shadow-md scale-105" : "text-slate-600 border-slate-200 bg-white hover:border-lime-300 hover:bg-lime-100/20"
                                     }`}
-                                    style={reps === chip ? { background: mg?.color ?? "#6366f1", boxShadow: `0 4px 14px ${mg?.color ?? "#6366f1"}55` } : {}}
+                                    style={reps === chip ? { background: "#c9ff2f", boxShadow: "0 4px 14px rgba(201,255,47,0.35)" } : {}}
                                   >
                                     {chip}
                                   </button>
@@ -528,8 +529,8 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                             onClick={addSet}
                             className="w-full py-4 rounded-2xl font-black text-lg text-white flex items-center justify-center gap-3 relative overflow-hidden"
                             style={{
-                              background: `linear-gradient(135deg, ${mg?.color ?? "#2563eb"}, #6366f1)`,
-                              boxShadow: `0 8px 28px ${mg?.color ?? "#2563eb"}44`
+                              background: "linear-gradient(135deg, #d9ff63, #c9ff2f)",
+                              boxShadow: "0 8px 28px rgba(201,255,47,0.35)"
                             }}
                           >
                             <motion.div
@@ -538,10 +539,10 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                               animate={{ x: ["-120%", "220%"] }}
                               transition={{ repeat: Infinity, duration: 3, ease: "linear", repeatDelay: 1.5 }}
                             />
-                            <span className="relative">🎯</span>
-                            <span className="relative">打卡记录一组</span>
+                            <span className="relative text-black">🎯</span>
+                            <span className="relative text-black">打卡记录一组</span>
                             {block.sets.length > 0 && (
-                              <span className="relative ml-1 text-sm opacity-75">第{block.sets.length + 1}组</span>
+                              <span className="relative ml-1 text-sm text-black/70">第{block.sets.length + 1}组</span>
                             )}
                           </motion.button>
 
@@ -613,7 +614,7 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
         <motion.button
           whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
           onClick={() => setShowPicker(true)}
-          className="w-full mt-4 py-4 rounded-2xl border-2 border-dashed border-indigo-200 text-indigo-400 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/50 transition-all flex items-center justify-center gap-2 font-bold bg-white/60"
+          className="w-full mt-4 py-4 rounded-2xl border-2 border-dashed border-lime-300 text-lime-300 hover:border-lime-200 hover:text-lime-200 hover:bg-lime-200/10 transition-all flex items-center justify-center gap-2 font-bold bg-white/60"
         >
           <Plus className="w-5 h-5" /> 添加训练内容
         </motion.button>
@@ -630,7 +631,7 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
             <motion.div
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               transition={{ type: "spring", stiffness: 360, damping: 34 }}
-              className="fixed inset-x-0 bottom-0 z-50 rounded-t-[28px] overflow-hidden bg-white"
+              className="fixed inset-x-0 bottom-0 z-[80] rounded-t-[28px] overflow-hidden bg-white"
               style={{ maxHeight: "90vh", boxShadow: "0 -8px 60px rgba(0,0,0,0.18)" }}
             >
               {/* Handle */}
@@ -638,13 +639,20 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                 <div className="w-10 h-1 bg-slate-200 rounded-full" />
               </div>
 
-              <div className="overflow-y-auto" style={{ maxHeight: "calc(90vh - 24px)", scrollbarWidth: "none" }}>
+              <div
+                className="overflow-y-auto"
+                style={{
+                  maxHeight: "calc(90vh - 24px)",
+                  scrollbarWidth: "none",
+                  paddingBottom: interactionBottomSpace,
+                }}
+              >
                 <AnimatePresence mode="wait">
                   {!pickerMuscle ? (
                     /* Muscle selection */
                     <motion.div key="muscle"
                       initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}
-                      className="p-5 pb-10"
+                      className="p-5 pb-20"
                     >
                       <div className="flex items-center justify-between mb-6">
                         <div>
@@ -701,7 +709,7 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                     /* Exercise selection */
                     <motion.div key="exercise"
                       initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-                      className="p-5 pb-10"
+                      className="p-5 pb-20"
                     >
                       <div className="flex items-center gap-3 mb-6">
                         <button onClick={() => setPickerMuscle(null)}
@@ -726,7 +734,7 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                               whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
                               onClick={() => handleSelectExercise(ex, isCardio)}
-                              className="w-full p-4 rounded-2xl border bg-white border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/40 text-left flex items-center gap-4 transition-all group"
+                              className="w-full p-4 rounded-2xl border bg-white border-slate-100 hover:border-lime-300 hover:bg-lime-200/10 text-left flex items-center gap-4 transition-all group"
                               style={{ boxShadow: "0 1px 6px rgba(0,0,0,0.04)" }}
                             >
                               <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-110 transition-transform"
@@ -749,7 +757,7 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                                   <span className="text-xs text-slate-300">暂无</span>
                                 )}
                               </div>
-                              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-400 transition-colors flex-shrink-0" />
+                              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-lime-300 transition-colors flex-shrink-0" />
                             </motion.button>
                           );
                         })}
@@ -757,12 +765,12 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                           whileHover={{ scale: 1.01 }}
                           whileTap={{ scale: 0.99 }}
                           onClick={() => handleCustomExercise(pickerMuscleData?.isCardio ?? false)}
-                          className="w-full p-4 rounded-2xl border-2 border-dashed border-indigo-200 bg-indigo-50/40 text-left flex items-center gap-3"
+                          className="w-full p-4 rounded-2xl border-2 border-dashed border-lime-300 bg-lime-200/10 text-left flex items-center gap-3"
                         >
                           <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-xl">➕</div>
                           <div>
-                            <div className="font-bold text-indigo-700">自定义动作</div>
-                            <div className="text-xs text-indigo-500 mt-0.5">添加系统里没有的训练姿势</div>
+                            <div className="font-bold text-lime-300">自定义动作</div>
+                            <div className="text-xs text-zinc-300 mt-0.5">添加系统里没有的训练姿势</div>
                           </div>
                         </motion.button>
                       </div>

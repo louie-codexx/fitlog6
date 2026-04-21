@@ -130,8 +130,8 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
               <button onClick={() => setShowFilter(!showFilter)}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold border transition-all ${
                   filterMuscle
-                    ? "bg-indigo-600 text-white border-indigo-600 shadow-md"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300"
+                    ? "bg-lime-300 text-black border-lime-200 shadow-md"
+                    : "bg-white border-slate-200 text-slate-600 hover:border-lime-300"
                 }`}>
                 <Filter className="w-3.5 h-3.5" />
                 {filterMuscle ?? "筛选"}
@@ -147,7 +147,7 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
                 <div className="flex gap-2 flex-wrap pt-3 pb-1">
                   <button onClick={() => setFilterMuscle(null)}
                     className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition-all ${
-                      !filterMuscle ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-200 text-slate-600"
+                      !filterMuscle ? "bg-lime-300 text-black border-lime-200" : "bg-white border-slate-200 text-slate-600"
                     }`}>全部</button>
                   {allMuscles.map(m => {
                     const mc = MUSCLE_COLORS[normalizeMuscle(m)];
@@ -198,8 +198,8 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
                 onClick={() => setRangeDays(opt.days)}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                   rangeDays === opt.days
-                    ? "bg-indigo-600 text-white border-indigo-600"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300"
+                    ? "bg-lime-300 text-black border-lime-200"
+                    : "bg-white border-slate-200 text-slate-600 hover:border-lime-300"
                 }`}
               >
                 {opt.label}
@@ -209,7 +209,7 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-5 pb-28">
+      <div className="max-w-lg mx-auto px-4 py-5 pb-36">
         {workouts.length === 0 ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-24">
             <div className="w-20 h-20 rounded-3xl mx-auto mb-5 flex items-center justify-center text-4xl bg-white shadow-sm border border-slate-100">📭</div>
@@ -342,7 +342,7 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
             )}
 
             {/* Timeline */}
-            <div className="space-y-2.5">
+            <div className="space-y-2.5 pb-10">
               {sortedDates.length === 0 ? (
                 <div className="text-center py-10 text-slate-400">该部位暂无记录</div>
               ) : sortedDates.map(([date, records], idx) => (
