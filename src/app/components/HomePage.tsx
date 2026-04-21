@@ -1,20 +1,23 @@
 import { useState, useEffect, useRef, type ChangeEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  BarChart2, TrendingUp, Flame, Zap, Target,
-  ChevronRight, Dumbbell, Play, Calendar, Award
+  ChevronRight, Dumbbell, Play
 } from "lucide-react";
 import type { WorkoutRecord } from "../App";
 
 const QUOTES = [
-  { text: "每一滴汗水，都是对自己最好的投资。", icon: "💪" },
-  { text: "不是因为看到希望才坚持，而是坚持了才看到希望。", icon: "🔥" },
-  { text: "今天的痛苦，是明天更强大的基础。", icon: "⚡" },
-  { text: "你的极限只存在于你停止突破的那一刻。", icon: "🏆" },
-  { text: "不要比较，专注自己的进步，哪怕每次只有 1%。", icon: "📈" },
+  { text: "Just Do It.", icon: "✔️" },
+  { text: "Impossible is Nothing. —— Adidas", icon: "⚡" },
+  { text: "I can accept failure, everyone fails at something. But I can’t accept not trying. —— Michael Jordan", icon: "🏀" },
+  { text: "Hard work beats talent when talent doesn’t work hard. —— Kevin Durant", icon: "🔥" },
+  { text: "It’s not about perfect. It’s about effort.", icon: "💪" },
+  { text: "Success isn’t owned, it’s leased. And rent is due every day. —— J.J. Watt", icon: "📈" },
 ];
 
 const HERO_IMAGE_KEY = "fitlog-home-hero-image";
+const REMINDER_KEY = "fitlog-reminder-settings";
+const GOALS_KEY = "fitlog-goal-settings";
+const QUOTE_INDEX_KEY = "fitlog-home-quote-index";
 const DEFAULT_HERO_IMAGE =
   "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1400&q=80";
 
@@ -43,16 +46,43 @@ const MUSCLE_COLORS: Record<string, { bg: string; text: string; border: string }
 
 interface HomePageProps {
   onStartWorkout: () => void;
-  onViewHistory: () => void;
-  onViewSummary: () => void;
   workouts: WorkoutRecord[];
+  currentUser: string;
+  users: string[];
+  onSwitchUser: (user: string) => void;
+  onCreateUser: (name: string) => void;
+  onDeleteCurrentUser: () => void;
 }
 
-export function HomePage({ onStartWorkout, onViewHistory, onViewSummary, workouts }: HomePageProps) {
-  const [quoteIdx, setQuoteIdx] = useState(() => Math.floor(Math.random() * QUOTES.length));
+export function HomePage({
+  onStartWorkout,
+  workouts,
+  currentUser,
+  users,
+  onSwitchUser,
+  onCreateUser,
+  onDeleteCurrentUser,
+}: HomePageProps) {
+  const [quoteIdx, setQuoteIdx] = useState(() => {
+    const prev = Number(localStorage.getItem(QUOTE_INDEX_KEY));
+    if (!Number.isFinite(prev) || prev < 0 || prev >= QUOTES.length) {
+      return Math.floor(Math.random() * QUOTES.length);
+    }
+    if (QUOTES.length <= 1) return prev;
+    let next = prev;
+    while (next === prev) next = Math.floor(Math.random() * QUOTES.length);
+    return next;
+  });
   const [quoteVisible, setQuoteVisible] = useState(true);
   const [heroImage, setHeroImage] = useState(DEFAULT_HERO_IMAGE);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderTime, setReminderTime] = useState("19:30");
+  const [goals, setGoals] = useState({
+    weeklySessions: 4,
+    cardioMinutes: 120,
+    strengthVolume: 12000,
+  });
 
   const greeting = getGreeting();
   const today = new Date().toLocaleDateString("zh-CN");
@@ -63,6 +93,13 @@ export function HomePage({ onStartWorkout, onViewHistory, onViewSummary, workout
   const weekAgo = new Date(Date.now() - 7 * 86400000);
   const weekWorkouts = workouts.filter(w => new Date(w.date) >= weekAgo);
   const weekDays = new Set(weekWorkouts.map(w => new Date(w.date).toLocaleDateString("zh-CN"))).size;
+  const weekSessions = weekWorkouts.length;
+  const weekCardioMinutes = weekWorkouts
+    .filter(w => w.muscle.includes("有氧"))
+    .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.duration ?? set.weight ?? 0), 0), 0);
+  const weekStrengthVolume = weekWorkouts
+    .filter(w => !w.muscle.includes("有氧"))
+    .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.weight ?? 0) * (set.reps ?? 0), 0), 0);
 
   const streak = (() => {
     let count = 0;
@@ -82,11 +119,54 @@ export function HomePage({ onStartWorkout, onViewHistory, onViewSummary, workout
     }, 6000);
     return () => clearInterval(iv);
   }, []);
+  useEffect(() => {
+    localStorage.setItem(QUOTE_INDEX_KEY, String(quoteIdx));
+  }, [quoteIdx]);
 
   useEffect(() => {
     const saved = localStorage.getItem(HERO_IMAGE_KEY);
     if (saved) setHeroImage(saved);
   }, []);
+  useEffect(() => {
+    const savedReminder = localStorage.getItem(REMINDER_KEY);
+    if (savedReminder) {
+      try {
+        const parsed = JSON.parse(savedReminder);
+        setReminderEnabled(Boolean(parsed.enabled));
+        setReminderTime(parsed.time ?? "19:30");
+      } catch {
+        // ignore parse failure
+      }
+    }
+    const savedGoals = localStorage.getItem(GOALS_KEY);
+    if (savedGoals) {
+      try {
+        setGoals(prev => ({ ...prev, ...JSON.parse(savedGoals) }));
+      } catch {
+        // ignore parse failure
+      }
+    }
+  }, []);
+  useEffect(() => {
+    localStorage.setItem(REMINDER_KEY, JSON.stringify({ enabled: reminderEnabled, time: reminderTime }));
+  }, [reminderEnabled, reminderTime]);
+  useEffect(() => {
+    localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
+  }, [goals]);
+  useEffect(() => {
+    if (!reminderEnabled) return;
+    const timer = setInterval(() => {
+      const now = new Date();
+      const hm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      const dayTag = now.toLocaleDateString("zh-CN");
+      const lastTag = localStorage.getItem("fitlog-reminder-last-day");
+      if (hm === reminderTime && lastTag !== dayTag) {
+        alert("Fitlog 提醒：该训练啦，今天也要完成打卡！");
+        localStorage.setItem("fitlog-reminder-last-day", dayTag);
+      }
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [reminderEnabled, reminderTime]);
 
   const dateStr = new Date().toLocaleDateString("zh-CN", {
     month: "long", day: "numeric", weekday: "long",
@@ -104,6 +184,16 @@ export function HomePage({ onStartWorkout, onViewHistory, onViewSummary, workout
     };
     reader.readAsDataURL(file);
   };
+  const getGoalPercent = (current: number, target: number) => {
+    if (!target || target <= 0) return 0;
+    return Math.min(100, Math.round((current / target) * 100));
+  };
+  const goalProgress = [
+    { label: "本周训练次数", current: weekSessions, target: goals.weeklySessions, unit: "次", color: "#2563eb" },
+    { label: "本周有氧时长", current: Math.round(weekCardioMinutes), target: goals.cardioMinutes, unit: "min", color: "#0891b2" },
+    { label: "本周力量总量", current: Math.round(weekStrengthVolume), target: goals.strengthVolume, unit: "kg", color: "#7c3aed" },
+  ];
+  const normalizeMuscle = (muscle: string) => (muscle.includes("有氧") ? "有氧" : muscle);
 
   // Week ring visualization
   const weekDays7 = Array.from({ length: 7 }, (_, i) => {
@@ -163,6 +253,47 @@ export function HomePage({ onStartWorkout, onViewHistory, onViewSummary, workout
               className="w-full h-40 object-cover rounded-xl border border-white/20 cursor-pointer"
             />
             <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+          </div>
+
+          <div className="mb-5 rounded-2xl border border-white/25 bg-white/10 p-3 backdrop-blur-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-white font-semibold text-sm">当前用户：{currentUser}</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const name = prompt("请输入新用户名");
+                    if (name) onCreateUser(name);
+                  }}
+                  className="h-8 px-2.5 rounded-lg bg-white/20 text-white text-xs border border-white/25"
+                >
+                  新建用户
+                </button>
+                <button
+                  onClick={() => {
+                    if (users.length <= 1) return;
+                    if (confirm("删除当前用户及其所有训练记录？")) onDeleteCurrentUser();
+                  }}
+                  className="h-8 px-2.5 rounded-lg bg-red-500/30 text-white text-xs border border-red-200/30"
+                >
+                  删除用户
+                </button>
+              </div>
+            </div>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {users.map(user => (
+                <button
+                  key={user}
+                  onClick={() => onSwitchUser(user)}
+                  className={`h-8 rounded-lg text-xs font-semibold border ${
+                    user === currentUser
+                      ? "bg-white text-indigo-700 border-white"
+                      : "bg-white/15 text-blue-100 border-white/20 hover:bg-white/25"
+                  }`}
+                >
+                  {user}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Today status card */}
@@ -263,30 +394,89 @@ export function HomePage({ onStartWorkout, onViewHistory, onViewSummary, workout
             <ChevronRight className="relative w-5 h-5 text-blue-200 ml-auto" />
           </motion.button>
 
-          {/* Quick access buttons */}
           <motion.div
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-            className="grid grid-cols-2 gap-3 mb-7"
+            className="rounded-2xl border border-slate-200 bg-white p-4 mb-6"
+            style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
           >
-            {[
-              { label: "训练历史", sub: "查看过去记录", icon: <BarChart2 className="w-5 h-5" />, onClick: onViewHistory, color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe" },
-              { label: "周期总结", sub: "数据 & 成就", icon: <TrendingUp className="w-5 h-5" />, onClick: onViewSummary, color: "#7c3aed", bg: "#faf5ff", border: "#ddd6fe" },
-            ].map(btn => (
-              <motion.button
-                key={btn.label}
-                whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.97 }}
-                onClick={btn.onClick}
-                className="p-4 rounded-2xl border text-left"
-                style={{ background: btn.bg, borderColor: btn.border, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
-              >
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
-                  style={{ background: `${btn.color}18`, color: btn.color }}>
-                  {btn.icon}
-                </div>
-                <div className="font-bold text-slate-800">{btn.label}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{btn.sub}</div>
-              </motion.button>
-            ))}
+            <div className="flex items-center justify-between mb-2.5">
+              <h3 className="font-bold text-slate-800 text-sm">训练提醒</h3>
+              <label className="inline-flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={reminderEnabled}
+                  onChange={(e) => setReminderEnabled(e.target.checked)}
+                  className="w-4 h-4 accent-indigo-600"
+                />
+                <span className="text-xs text-slate-600">{reminderEnabled ? "已开启" : "已关闭"}</span>
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="time"
+                value={reminderTime}
+                onChange={(e) => setReminderTime(e.target.value)}
+                className="h-9 px-2 rounded-lg border border-slate-200 text-sm text-slate-700"
+              />
+              <p className="text-xs text-slate-500">到点会弹出训练提醒。</p>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.33 }}
+            className="rounded-2xl border border-slate-200 bg-white p-4 mb-6"
+            style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
+          >
+            <h3 className="font-bold text-slate-800 text-sm mb-2.5">个人目标追踪</h3>
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              <input
+                type="number"
+                min={1}
+                value={goals.weeklySessions}
+                onChange={(e) => setGoals(prev => ({ ...prev, weeklySessions: Math.max(1, Number(e.target.value) || 1) }))}
+                className="h-9 px-2 rounded-lg border border-slate-200 text-xs"
+                title="每周训练次数目标"
+              />
+              <input
+                type="number"
+                min={10}
+                value={goals.cardioMinutes}
+                onChange={(e) => setGoals(prev => ({ ...prev, cardioMinutes: Math.max(10, Number(e.target.value) || 10) }))}
+                className="h-9 px-2 rounded-lg border border-slate-200 text-xs"
+                title="每周有氧分钟目标"
+              />
+              <input
+                type="number"
+                min={100}
+                value={goals.strengthVolume}
+                onChange={(e) => setGoals(prev => ({ ...prev, strengthVolume: Math.max(100, Number(e.target.value) || 100) }))}
+                className="h-9 px-2 rounded-lg border border-slate-200 text-xs"
+                title="每周力量总量目标"
+              />
+            </div>
+            <div className="space-y-2.5">
+              {goalProgress.map(item => {
+                const pct = getGoalPercent(item.current, item.target);
+                return (
+                  <div key={item.label}>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-600">{item.label}</span>
+                      <span className="font-semibold" style={{ color: item.color }}>
+                        {item.current}/{item.target} {item.unit}
+                      </span>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-100 mt-1 overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        className="h-full rounded-full"
+                        style={{ background: item.color }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </motion.div>
 
           {/* Motivational Quote */}
@@ -315,15 +505,14 @@ export function HomePage({ onStartWorkout, onViewHistory, onViewSummary, workout
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold text-slate-800">最近训练</h3>
-                <button onClick={onViewHistory} className="text-xs text-indigo-600 font-semibold flex items-center gap-1 hover:text-indigo-800">
-                  查看全部 <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+                <span className="text-xs text-slate-400">在底部导航查看更多</span>
               </div>
               <div className="space-y-2.5">
                 {[...workouts].reverse().slice(0, 4).map((workout, i) => {
-                  const mc = MUSCLE_COLORS[workout.muscle];
+                  const baseMuscle = normalizeMuscle(workout.muscle);
+                  const mc = MUSCLE_COLORS[baseMuscle];
                   const best = Math.max(
-                    ...workout.sets.map((s) => workout.muscle === "有氧" ? (s.duration ?? s.weight ?? 0) : (s.weight ?? 0))
+                    ...workout.sets.map((s) => workout.muscle.includes("有氧") ? (s.duration ?? s.weight ?? 0) : (s.weight ?? 0))
                   );
                   return (
                     <motion.div
@@ -334,7 +523,7 @@ export function HomePage({ onStartWorkout, onViewHistory, onViewSummary, workout
                       style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)", borderColor: "#e2e8f0" }}
                     >
                       <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 border ${mc?.bg ?? "bg-slate-50"} ${mc?.border ?? "border-slate-200"}`}>
-                        {MUSCLE_EMOJI[workout.muscle] ?? "💪"}
+                        {MUSCLE_EMOJI[baseMuscle] ?? "💪"}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-slate-800 text-sm truncate">{workout.exercise}</p>
@@ -345,7 +534,7 @@ export function HomePage({ onStartWorkout, onViewHistory, onViewSummary, workout
                           {new Date(workout.date).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" })}
                         </p>
                         <p className="text-xs font-bold text-indigo-600 mt-0.5">
-                          {workout.muscle === "有氧" ? `${best}min` : `${best}kg`} · {workout.sets.length}组
+                          {workout.muscle.includes("有氧") ? `${best}min` : `${best}kg`} · {workout.sets.length}组
                         </p>
                       </div>
                     </motion.div>

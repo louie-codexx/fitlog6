@@ -101,29 +101,31 @@ const muscleGroups: MuscleGroup[] = [
     ]
   },
   {
-    name: "有氧", icon: "🏃",
+    name: "有氧-户外", icon: "🌤️",
     color: "#0891b2", light: "#ecfeff", border: "#a5f3fc", text: "#0e7490",
     isCardio: true,
     exercises: [
-      { name: "跑步",   icon: "🏃", tip: "保持稳定配速，腹式呼吸" },
-      { name: "骑行",   icon: "🚴", tip: "保持节奏，调节合适阻力" },
-      { name: "游泳",   icon: "🏊", tip: "全身有氧，效果最佳" },
-      { name: "跳绳",   icon: "⭕", tip: "高效燃脂，手腕带动" },
+      { name: "跑步", icon: "🏃", tip: "保持稳定配速，腹式呼吸" },
+      { name: "骑行", icon: "🚴", tip: "保持节奏，调节合适阻力" },
+      { name: "快走", icon: "🚶", tip: "低强度持续输出，适合恢复日" },
+      { name: "爬坡走", icon: "⛰️", tip: "增强心肺和下肢耐力" },
+      { name: "跳绳", icon: "⭕", tip: "高效燃脂，手腕带动" },
+      { name: "游泳", icon: "🏊", tip: "全身有氧，效果最佳" },
+    ]
+  },
+  {
+    name: "有氧-户内", icon: "🏠",
+    color: "#0ea5a5", light: "#f0fdfa", border: "#99f6e4", text: "#0f766e",
+    isCardio: true,
+    exercises: [
       { name: "椭圆机", icon: "🔄", tip: "低冲击有氧，膝盖友好" },
       { name: "划船机", icon: "🚣", tip: "全身60%肌肉参与" },
-      { name: "爬楼梯", icon: "🪜", tip: "臀腿有氧双重刺激" },
-      { name: "HIIT",   icon: "⚡", tip: "高强度间歇，燃脂效率最高" },
+      { name: "爬楼梯机", icon: "🪜", tip: "臀腿有氧双重刺激" },
+      { name: "动感单车", icon: "🚴", tip: "高效提升心肺，节奏感强" },
+      { name: "HIIT", icon: "⚡", tip: "高强度间歇，燃脂效率最高" },
     ]
   },
 ];
-
-function getWeightChips(pr: number, isCardio: boolean): number[] {
-  if (isCardio) return [10, 15, 20, 30, 45, 60, 90];
-  if (pr <= 0) return [20, 40, 50, 60, 70, 80, 100];
-  return [...new Set([
-    Math.max(0, pr - 10), Math.max(0, pr - 5), pr, pr + 5, pr + 10, pr + 15,
-  ])].sort((a, b) => a - b);
-}
 
 const REPS_CHIPS = [5, 6, 8, 10, 12, 15, 20];
 const INTENSITY_OPTIONS = [
@@ -147,11 +149,12 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [pickerMuscle, setPickerMuscle] = useState<string | null>(null);
-  const [weight, setWeight] = useState(60);
+  const [weight, setWeight] = useState(0);
   const [reps, setReps] = useState(10);
   const [intensity, setIntensity] = useState<"easy" | "medium" | "hard">("medium");
-  const [prFlash, setPrFlash] = useState<{ name: string; weight: number } | null>(null);
+  const [prFlash, setPrFlash] = useState<{ name: string; value: number; isCardio: boolean } | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  const [recordFlash, setRecordFlash] = useState<{ text: string; tone: string } | null>(null);
   const startTimeRef = useRef(Date.now());
 
   useEffect(() => {
@@ -165,20 +168,28 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
   const canFinish = blocks.some(b => b.sets.length > 0);
 
   const handleSelectExercise = (exercise: ExerciseData, isCardio: boolean) => {
-    const pr = getPersonalRecord(pickerMuscle!, exercise.name);
     const id = `block-${Date.now()}`;
     setBlocks(prev => [...prev, { id, muscle: pickerMuscle!, exercise, sets: [], isCardio }]);
     setActiveBlockId(id);
-    setWeight(isCardio ? 30 : pr > 0 ? pr : 60);
-    setReps(isCardio ? 5 : 10);
+    setWeight(0);
+    setReps(isCardio ? 6 : 10);
     setIntensity("medium");
     setShowPicker(false);
     setPickerMuscle(null);
   };
+  const handleCustomExercise = (isCardio: boolean) => {
+    const customName = prompt("请输入自定义动作名称");
+    if (!customName || !customName.trim()) return;
+    const customTip = prompt("可选：请输入动作提示")?.trim() || "自定义动作，请注意动作标准与安全。";
+    handleSelectExercise(
+      { name: customName.trim(), icon: isCardio ? "📝" : "✍️", tip: customTip },
+      isCardio
+    );
+  };
 
-  const triggerPR = (exerciseName: string, w: number) => {
-    setPrFlash({ name: exerciseName, weight: w });
-    setTimeout(() => setPrFlash(null), 2500);
+  const triggerPR = (exerciseName: string, value: number, isCardio: boolean) => {
+    setPrFlash({ name: exerciseName, value, isCardio });
+    setTimeout(() => setPrFlash(null), 1600);
     confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 }, colors: ["#2563eb", "#7c3aed", "#fbbf24", "#34d399"] });
     setTimeout(() => confetti({ particleCount: 60, angle: 60, spread: 70, origin: { x: 0 }, colors: ["#2563eb", "#60a5fa"] }), 300);
     setTimeout(() => confetti({ particleCount: 60, angle: 120, spread: 70, origin: { x: 1 }, colors: ["#7c3aed", "#c4b5fd"] }), 500);
@@ -186,14 +197,27 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
 
   const addSet = () => {
     if (!activeBlockId || !activeBlock) return;
+    if (activeBlock.isCardio && weight <= 0) {
+      alert("请先设置有氧时长（分钟）");
+      return;
+    }
+    if (!activeBlock.isCardio && (weight <= 0 || reps <= 0)) {
+      alert("请先设置有效的重量和次数");
+      return;
+    }
     const newSet: WorkoutSet = activeBlock.isCardio
       ? { duration: weight, intensity }
       : { weight, reps };
     setBlocks(prev => prev.map(b => b.id === activeBlockId ? { ...b, sets: [...b.sets, newSet] } : b));
-    if (!activeBlock.isCardio) {
-      const pr = getPersonalRecord(activeBlock.muscle, activeBlock.exercise.name);
-      if (weight > pr) triggerPR(activeBlock.exercise.name, weight);
-    }
+    setRecordFlash({
+      text: activeBlock.isCardio
+        ? `+1 组 ${weight} 分钟已记录`
+        : `+1 组 ${weight}kg × ${reps}次`,
+      tone: activeBlock.isCardio ? "#0891b2" : (muscleGroups.find(m => m.name === activeBlock.muscle)?.color ?? "#2563eb"),
+    });
+    setTimeout(() => setRecordFlash(null), 1200);
+    const pr = getPersonalRecord(activeBlock.muscle, activeBlock.exercise.name);
+    if (weight > pr) triggerPR(activeBlock.exercise.name, weight, activeBlock.isCardio);
   };
 
   const undoLastSet = (blockId: string) => {
@@ -212,7 +236,13 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
   const finishWorkout = () => {
     const records: WorkoutRecord[] = blocks
       .filter(b => b.sets.length > 0)
-      .map(b => ({ date: new Date().toISOString(), muscle: b.muscle, exercise: b.exercise.name, sets: b.sets }));
+      .map((b, idx) => ({
+        id: `${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`,
+        date: new Date().toISOString(),
+        muscle: b.muscle,
+        exercise: b.exercise.name,
+        sets: b.sets,
+      }));
     if (records.length > 0) onSaveWorkouts(records);
     onBack();
   };
@@ -226,27 +256,34 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] pointer-events-none flex items-center justify-center"
-            style={{ backdropFilter: "blur(2px)" }}
+            style={{ backdropFilter: "blur(2px)", background: "rgba(15,23,42,0.2)" }}
           >
             <motion.div
               initial={{ scale: 0.2, y: 60, opacity: 0, rotate: -8 }}
-              animate={{ scale: 1, y: 0, opacity: 1, rotate: 0 }}
-              exit={{ scale: 1.1, y: -40, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 420, damping: 22 }}
+              animate={{ scale: [1, 1.08, 1], y: 0, opacity: 1, rotate: 0 }}
+              exit={{ scale: 1.05, y: -30, opacity: 0 }}
+              transition={{ duration: 0.9, ease: "easeOut" }}
               className="relative px-10 py-8 rounded-3xl text-center overflow-hidden border-2 border-white/80"
               style={{
                 background: "linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)",
                 boxShadow: "0 24px 80px rgba(124,58,237,0.6), 0 0 0 8px rgba(79,70,229,0.15)"
               }}
             >
-              <motion.div animate={{ scale: [1, 1.3, 1], rotate: [0, 10, -10, 0] }} transition={{ duration: 0.6, delay: 0.2 }}>
+              <motion.div animate={{ scale: [1, 1.35, 1], rotate: [0, 10, -10, 0] }} transition={{ duration: 0.7, delay: 0.05 }}>
                 <Trophy className="w-12 h-12 text-yellow-300 mx-auto mb-3" />
               </motion.div>
-              <p className="text-white text-3xl font-black tracking-tight">新纪录！🎉</p>
+              <motion.p
+                initial={{ scale: 0.8 }}
+                animate={{ scale: [1, 1.25, 1] }}
+                transition={{ duration: 0.7 }}
+                className="text-white text-4xl font-black tracking-tight"
+              >
+                NEW PR
+              </motion.p>
               <p className="text-blue-100 mt-1.5 font-semibold">
-                {prFlash.name} · {prFlash.weight}kg
+                {prFlash.name} · {prFlash.value}{prFlash.isCardio ? "min" : "kg"}
               </p>
-              <p className="text-blue-200 text-sm mt-1">个人最高记录已突破！</p>
+              <p className="text-blue-200 text-sm mt-1">个人最佳成绩已刷新</p>
             </motion.div>
           </motion.div>
         )}
@@ -268,7 +305,16 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
               <p className="text-xs text-slate-500 flex items-center gap-1.5">
                 <Timer className="w-3 h-3" />
                 {elapsed < 1 ? "刚刚开始" : `已 ${elapsed} 分钟`}
-                {totalSets > 0 && <span className="text-indigo-600 font-semibold">· {totalSets} 组</span>}
+                {totalSets > 0 && (
+                  <motion.span
+                    key={totalSets}
+                    initial={{ scale: 0.8, y: 3, opacity: 0.4 }}
+                    animate={{ scale: 1, y: 0, opacity: 1 }}
+                    className="text-indigo-600 font-semibold"
+                  >
+                    · {totalSets} 组
+                  </motion.span>
+                )}
               </p>
             </div>
           </div>
@@ -284,6 +330,19 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
           )}
         </div>
       </div>
+      <AnimatePresence>
+        {recordFlash && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.95 }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-[70] px-4 py-2 rounded-xl text-white text-sm font-semibold shadow-lg"
+            style={{ background: recordFlash.tone }}
+          >
+            {recordFlash.text}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Content */}
       <div className="max-w-lg mx-auto px-4 py-5 pb-32">
@@ -292,8 +351,6 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
             {blocks.map(block => {
               const isActive = block.id === activeBlockId;
               const mg = muscleGroups.find(m => m.name === block.muscle);
-              const pr = getPersonalRecord(block.muscle, block.exercise.name);
-              const weightChips = getWeightChips(pr, block.isCardio);
 
               return (
                 <motion.div
@@ -378,7 +435,7 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                             <p className="text-xs text-slate-600">{block.exercise.tip}</p>
                           </div>
 
-                          {/* Weight / Duration chips */}
+                          {/* Weight / Duration slider */}
                           <div className="mb-5">
                             <div className="flex items-center justify-between mb-2.5">
                               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -388,21 +445,27 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                                 {weight}{block.isCardio ? " min" : " kg"}
                               </span>
                             </div>
-                            <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-                              {weightChips.map(chip => (
-                                <button key={chip} onClick={() => setWeight(chip)}
-                                  className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold border transition-all duration-150 ${
-                                    weight === chip ? "text-white border-transparent shadow-md scale-105" : "text-slate-600 border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50"
-                                  }`}
-                                  style={weight === chip ? { background: mg?.color ?? "#6366f1", boxShadow: `0 4px 14px ${mg?.color ?? "#6366f1"}55` } : {}}
-                                >
-                                  {chip}
-                                </button>
-                              ))}
-                              <button
-                                onClick={() => { const v = parseFloat(prompt("自定义重量:") ?? ""); if (!isNaN(v)) setWeight(v); }}
-                                className="flex-shrink-0 px-3 py-2.5 rounded-xl text-sm border border-slate-200 bg-white text-slate-400 hover:bg-slate-50"
-                              >＋</button>
+                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                              <input
+                                type="range"
+                                min={0}
+                                max={block.isCardio ? 180 : 300}
+                                step={block.isCardio ? 1 : 2.5}
+                                value={weight}
+                                onChange={(e) => setWeight(Number(e.target.value))}
+                                className="w-full accent-indigo-600"
+                              />
+                              <div className="mt-2 flex items-center justify-between gap-2">
+                                <span className="text-xs text-slate-400">默认从 0 开始，可滑动调节</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={weight}
+                                  step={block.isCardio ? 1 : 0.5}
+                                  onChange={(e) => setWeight(Math.max(0, Number(e.target.value) || 0))}
+                                  className="w-24 h-8 rounded-lg border border-slate-200 px-2 text-sm text-slate-700"
+                                />
+                              </div>
                             </div>
                           </div>
 
@@ -614,7 +677,7 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                         >
                           <span className="text-3xl">{mg.icon}</span>
                           <div className="text-left flex-1">
-                            <div className="font-bold text-slate-800">有氧训练</div>
+                            <div className="font-bold text-slate-800">{mg.name}</div>
                             <div className="text-xs mt-0.5" style={{ color: mg.color }}>{mg.exercises.length} 种运动可选</div>
                           </div>
                           <ChevronRight className="w-5 h-5 text-slate-400" />
@@ -677,6 +740,18 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                             </motion.button>
                           );
                         })}
+                        <motion.button
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
+                          onClick={() => handleCustomExercise(pickerMuscleData?.isCardio ?? false)}
+                          className="w-full p-4 rounded-2xl border-2 border-dashed border-indigo-200 bg-indigo-50/40 text-left flex items-center gap-3"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-xl">➕</div>
+                          <div>
+                            <div className="font-bold text-indigo-700">自定义动作</div>
+                            <div className="text-xs text-indigo-500 mt-0.5">添加系统里没有的训练姿势</div>
+                          </div>
+                        </motion.button>
                       </div>
                     </motion.div>
                   )}

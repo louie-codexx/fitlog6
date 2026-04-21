@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Calendar, TrendingUp, Trophy, Filter, ChevronDown, ChevronUp, Search, X } from "lucide-react";
+import { ArrowLeft, Calendar, TrendingUp, Trophy, Filter, ChevronDown, ChevronUp, Search, X, Trash2 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import type { WorkoutRecord } from "../App";
 
@@ -25,15 +25,18 @@ const MUSCLE_EMOJI: Record<string, string> = {
 interface HistoryPageProps {
   onBack: () => void;
   workouts: WorkoutRecord[];
+  onDeleteWorkout: (workoutId: string) => void;
+  onDeleteDateRecords: (dateKey: string) => void;
 }
 
-export function HistoryPage({ onBack, workouts }: HistoryPageProps) {
+export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRecords }: HistoryPageProps) {
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [filterMuscle, setFilterMuscle] = useState<string | null>(null);
   const [showFilter, setShowFilter] = useState(false);
   const [search, setSearch] = useState("");
   const [rangeDays, setRangeDays] = useState<7 | 30 | 0>(0);
 
+  const normalizeMuscle = (muscle: string) => (muscle.includes("有氧") ? "有氧" : muscle);
   const allMuscles = [...new Set(workouts.map(w => w.muscle))];
   const rangeStart = rangeDays > 0 ? new Date(Date.now() - rangeDays * 86400000) : null;
   const filtered = workouts.filter(w => {
@@ -58,7 +61,7 @@ export function HistoryPage({ onBack, workouts }: HistoryPageProps) {
 
   // Trend chart (last 12 strength workouts)
   const chartData = workouts
-    .filter(w => w.muscle !== "有氧")
+    .filter(w => !w.muscle.includes("有氧"))
     .slice(-12)
     .map((w, i) => ({
       n: `#${i + 1}`,
@@ -70,7 +73,7 @@ export function HistoryPage({ onBack, workouts }: HistoryPageProps) {
   const prs = workouts.reduce((acc, w) => {
     const key = `${w.muscle}|${w.exercise}`;
     const max = Math.max(
-      ...w.sets.map(s => (w.muscle === "有氧" ? (s.duration ?? s.weight ?? 0) : (s.weight ?? 0)))
+      ...w.sets.map(s => (w.muscle.includes("有氧") ? (s.duration ?? s.weight ?? 0) : (s.weight ?? 0)))
     );
     if (!acc[key] || max > acc[key]) acc[key] = max;
     return acc;
@@ -78,13 +81,13 @@ export function HistoryPage({ onBack, workouts }: HistoryPageProps) {
 
   const prEntries = Object.entries(prs).sort(([, a], [, b]) => b - a).slice(0, 8);
   const strengthVolume = filtered
-    .filter(w => w.muscle !== "有氧")
+    .filter(w => !w.muscle.includes("有氧"))
     .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.weight ?? 0) * (set.reps ?? 0), 0), 0);
   const cardioMinutes = filtered
-    .filter(w => w.muscle === "有氧")
+    .filter(w => w.muscle.includes("有氧"))
     .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.duration ?? set.weight ?? 0), 0), 0);
   const e1rm = filtered
-    .filter(w => w.muscle !== "有氧")
+    .filter(w => !w.muscle.includes("有氧"))
     .flatMap(w => w.sets.map(set => {
       const weight = set.weight ?? 0;
       const reps = set.reps ?? 0;
@@ -97,10 +100,10 @@ export function HistoryPage({ onBack, workouts }: HistoryPageProps) {
     const ds = d.toLocaleDateString("zh-CN");
     const dayWorkouts = filtered.filter(w => new Date(w.date).toLocaleDateString("zh-CN") === ds);
     const dayStrength = dayWorkouts
-      .filter(w => w.muscle !== "有氧")
+      .filter(w => !w.muscle.includes("有氧"))
       .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.weight ?? 0) * (set.reps ?? 0), 0), 0);
     const dayCardio = dayWorkouts
-      .filter(w => w.muscle === "有氧")
+      .filter(w => w.muscle.includes("有氧"))
       .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.duration ?? set.weight ?? 0), 0), 0);
     return {
       d: d.toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" }),
@@ -147,7 +150,7 @@ export function HistoryPage({ onBack, workouts }: HistoryPageProps) {
                       !filterMuscle ? "bg-indigo-600 text-white border-indigo-600" : "bg-white border-slate-200 text-slate-600"
                     }`}>全部</button>
                   {allMuscles.map(m => {
-                    const mc = MUSCLE_COLORS[m];
+                    const mc = MUSCLE_COLORS[normalizeMuscle(m)];
                     return (
                       <button key={m} onClick={() => { setFilterMuscle(filterMuscle === m ? null : m); }}
                         className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition-all flex items-center gap-1 ${
@@ -155,7 +158,7 @@ export function HistoryPage({ onBack, workouts }: HistoryPageProps) {
                             ? `${mc?.bg} ${mc?.text} ${mc?.border}`
                             : "bg-white border-slate-200 text-slate-600"
                         }`}>
-                        {MUSCLE_EMOJI[m]} {m}
+                        {MUSCLE_EMOJI[normalizeMuscle(m)]} {m}
                       </button>
                     );
                   })}
@@ -315,15 +318,16 @@ export function HistoryPage({ onBack, workouts }: HistoryPageProps) {
                 <div className="grid grid-cols-2 gap-2">
                   {prEntries.map(([key, w]) => {
                     const [muscle, exercise] = key.split("|");
-                    const mc = MUSCLE_COLORS[muscle];
-                    const hex = MUSCLE_HEX[muscle];
-                    const isCardio = muscle === "有氧";
+                    const base = normalizeMuscle(muscle);
+                    const mc = MUSCLE_COLORS[base];
+                    const hex = MUSCLE_HEX[base];
+                    const isCardio = muscle.includes("有氧");
                     return (
                       <div key={key}
                         className={`p-3 rounded-2xl border flex items-center justify-between gap-2 ${mc?.bg} ${mc?.border}`}>
                         <div className="min-w-0">
                           <div className="text-xs text-slate-500 flex items-center gap-1">
-                            <span>{MUSCLE_EMOJI[muscle]}</span>{muscle}
+                            <span>{MUSCLE_EMOJI[base]}</span>{muscle}
                           </div>
                           <div className="font-bold text-slate-800 text-sm truncate">{exercise}</div>
                         </div>
@@ -360,10 +364,20 @@ export function HistoryPage({ onBack, workouts }: HistoryPageProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`确定删除 ${date} 的全部训练记录吗？`)) onDeleteDateRecords(date);
+                        }}
+                        className="w-7 h-7 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center hover:bg-red-100"
+                        title="删除当天全部记录"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                      </button>
                       {/* Muscle dot indicators */}
                       <div className="flex -space-x-0.5">
                         {[...new Set(records.map(r => r.muscle))].slice(0, 4).map((m, i) => (
-                          <div key={i} className={`w-2.5 h-2.5 rounded-full border-2 border-white ${MUSCLE_COLORS[m]?.dot ?? "bg-slate-400"}`} />
+                          <div key={i} className={`w-2.5 h-2.5 rounded-full border-2 border-white ${MUSCLE_COLORS[normalizeMuscle(m)]?.dot ?? "bg-slate-400"}`} />
                         ))}
                       </div>
                       {expandedDate === date
@@ -381,15 +395,27 @@ export function HistoryPage({ onBack, workouts }: HistoryPageProps) {
                       >
                         <div className="px-4 pb-4 pt-1 border-t border-slate-100 space-y-2">
                           {records.map((r, i) => {
-                            const isCardio = r.muscle === "有氧";
-                            const mc = MUSCLE_COLORS[r.muscle];
-                            const hex = MUSCLE_HEX[r.muscle];
+                            const base = normalizeMuscle(r.muscle);
+                            const isCardio = r.muscle.includes("有氧");
+                            const mc = MUSCLE_COLORS[base];
+                            const hex = MUSCLE_HEX[base];
                             return (
                               <div key={i} className={`p-3.5 rounded-xl border ${mc?.bg} ${mc?.border}`}>
                                 <div className="flex items-center gap-2 mb-2.5">
-                                  <span className="text-base">{MUSCLE_EMOJI[r.muscle]}</span>
+                                  <span className="text-base">{MUSCLE_EMOJI[base]}</span>
                                   <span className="font-bold text-slate-800 text-sm">{r.exercise}</span>
                                   <span className={`ml-auto text-xs font-semibold ${mc?.text}`}>{r.muscle}</span>
+                                  <button
+                                    onClick={() => {
+                                      if (confirm(`删除动作「${r.exercise}」的该条记录？`)) {
+                                        onDeleteWorkout(r.id);
+                                      }
+                                    }}
+                                    className="w-6 h-6 rounded-md bg-red-50 border border-red-100 flex items-center justify-center hover:bg-red-100"
+                                    title="删除该条记录"
+                                  >
+                                    <Trash2 className="w-3 h-3 text-red-500" />
+                                  </button>
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
                                   {r.sets.map((set, si) => (

@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft, Award, Calendar, Flame, TrendingUp, Zap, Star, Target, BarChart3 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  LineChart, Line,
   ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from "recharts";
 import type { WorkoutRecord } from "../App";
@@ -48,6 +50,11 @@ interface SummaryPageProps {
 }
 
 export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
+  const [activeMilestoneKey, setActiveMilestoneKey] = useState<string | null>(null);
+  const [modalMilestoneKey, setModalMilestoneKey] = useState<string | null>(null);
+  const [compareStartKey, setCompareStartKey] = useState<string | null>(null);
+  const [compareEndKey, setCompareEndKey] = useState<string | null>(null);
+  const normalizeMuscle = (muscle: string) => (muscle.includes("有氧") ? "有氧" : muscle);
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 86400000);
   const monthAgo = new Date(now.getTime() - 30 * 86400000);
@@ -68,23 +75,23 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
   })();
 
   const prBreaks = monthWorkouts.filter((w, idx, arr) => {
-    const max = Math.max(...w.sets.map(s => w.muscle === "有氧" ? (s.duration ?? s.weight ?? 0) : (s.weight ?? 0)));
-    const prev = arr.slice(0, idx).filter(p => p.muscle === w.muscle && p.exercise === w.exercise);
+    const max = Math.max(...w.sets.map(s => w.muscle.includes("有氧") ? (s.duration ?? s.weight ?? 0) : (s.weight ?? 0)));
+    const prev = arr.slice(0, idx).filter(p => p.exercise === w.exercise);
     if (!prev.length) return false;
     return max > Math.max(
-      ...prev.flatMap(p => p.sets.map(s => p.muscle === "有氧" ? (s.duration ?? s.weight ?? 0) : (s.weight ?? 0)))
+      ...prev.flatMap(p => p.sets.map(s => p.muscle.includes("有氧") ? (s.duration ?? s.weight ?? 0) : (s.weight ?? 0)))
     );
   }).length;
 
   const totalVolume = monthWorkouts
-    .filter(w => w.muscle !== "有氧")
+    .filter(w => !w.muscle.includes("有氧"))
     .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.weight ?? 0) * (set.reps ?? 0), 0), 0);
 
   const cardioMinutes = monthWorkouts
-    .filter(w => w.muscle === "有氧")
+    .filter(w => w.muscle.includes("有氧"))
     .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.duration ?? set.weight ?? 0), 0), 0);
-  const strengthSessions = monthWorkouts.filter(w => w.muscle !== "有氧").length;
-  const cardioSessions = monthWorkouts.filter(w => w.muscle === "有氧").length;
+  const strengthSessions = monthWorkouts.filter(w => !w.muscle.includes("有氧")).length;
+  const cardioSessions = monthWorkouts.filter(w => w.muscle.includes("有氧")).length;
   const consistencyScore = Math.min(100, Math.round((new Set(monthWorkouts.map(w => new Date(w.date).toLocaleDateString("zh-CN"))).size / 30) * 100));
 
   // Weekly bar chart
@@ -94,15 +101,15 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
     const dayWs = workouts.filter(w => new Date(w.date).toLocaleDateString("zh-CN") === ds);
     return {
       name: `周${"日一二三四五六"[d.getDay()]}`,
-      力量: dayWs.filter(w => w.muscle !== "有氧").length,
+      力量: dayWs.filter(w => !w.muscle.includes("有氧")).length,
       有氧分钟: dayWs
-        .filter(w => w.muscle === "有氧")
+        .filter(w => w.muscle.includes("有氧"))
         .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.duration ?? set.weight ?? 0), 0), 0),
     };
   });
 
   const oneRMByExercise = monthWorkouts
-    .filter(w => w.muscle !== "有氧")
+    .filter(w => !w.muscle.includes("有氧"))
     .reduce((acc, w) => {
       const est = Math.max(...w.sets.map(set => {
         const weight = set.weight ?? 0;
@@ -119,7 +126,7 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
     .map(([exercise, value]) => ({ exercise: exercise.length > 6 ? `${exercise.slice(0, 6)}..` : exercise, 估算1RM: Math.round(value) }));
 
   const monthStrengthByExercise = monthWorkouts
-    .filter(w => w.muscle !== "有氧")
+    .filter(w => !w.muscle.includes("有氧"))
     .reduce((acc, w) => {
       const cur = Math.max(...w.sets.map(set => set.weight ?? 0));
       const prev = acc[w.exercise] ?? 0;
@@ -136,22 +143,210 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
     ? 0
     : sessionDates.slice(1).reduce((sum, t, i) => sum + (t - sessionDates[i]) / 86400000, 0) / (sessionDates.length - 1);
   const rhythmScore = avgGap === 0 ? 0 : Math.max(0, Math.min(100, Math.round(100 - Math.abs(avgGap - 2) * 25)));
+  const avgIntensityScore = (() => {
+    const intensityMap: Record<string, number> = { easy: 1, medium: 2, hard: 3 };
+    const all = monthWorkouts.flatMap(w => w.sets.map(s => intensityMap[s.intensity ?? "medium"] ?? 2));
+    if (!all.length) return 0;
+    return Number((all.reduce((a, b) => a + b, 0) / all.length).toFixed(2));
+  })();
+  const focusType = (() => {
+    if (strengthSessions === 0 && cardioSessions === 0) return "未形成训练习惯";
+    if (strengthSessions > cardioSessions * 1.6) return "力量主导型";
+    if (cardioSessions > strengthSessions * 1.6) return "心肺主导型";
+    return "均衡发展型";
+  })();
+  const profileLevel = (() => {
+    const score =
+      consistencyScore * 0.35 +
+      overloadRate * 0.25 +
+      rhythmScore * 0.2 +
+      Math.min(100, cardioMinutes / 1.8) * 0.2;
+    if (score >= 80) return "进阶训练者";
+    if (score >= 55) return "稳定训练者";
+    return "起步训练者";
+  })();
+
+  const monthlyGrowthData = Array.from({ length: 6 }, (_, i) => {
+    const monthDate = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+    const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1);
+    const monthRecords = workouts.filter(w => {
+      const t = new Date(w.date).getTime();
+      return t >= monthStart.getTime() && t < monthEnd.getTime();
+    });
+    const sessions = monthRecords.length;
+    const strengthVolume = monthRecords
+      .filter(w => !w.muscle.includes("有氧"))
+      .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.weight ?? 0) * (set.reps ?? 0), 0), 0);
+    const cardioMins = monthRecords
+      .filter(w => w.muscle.includes("有氧"))
+      .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.duration ?? set.weight ?? 0), 0), 0);
+    return {
+      month: `${monthDate.getMonth() + 1}月`,
+      训练次数: sessions,
+      训练负荷指数: Number((strengthVolume / 1000 + cardioMins / 30).toFixed(1)),
+    };
+  });
+
+  const totalAllSessions = workouts.length;
+  const totalAllStrengthVolume = workouts
+    .filter(w => !w.muscle.includes("有氧"))
+    .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.weight ?? 0) * (set.reps ?? 0), 0), 0);
+  const totalAllCardioMinutes = workouts
+    .filter(w => w.muscle.includes("有氧"))
+    .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.duration ?? set.weight ?? 0), 0), 0);
+  const sortedWorkouts = [...workouts].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  const getMonthMetrics = (base: Date) => {
+    const start = new Date(base.getFullYear(), base.getMonth(), 1);
+    const end = new Date(base.getFullYear(), base.getMonth() + 1, 1);
+    const chunk = workouts.filter(w => {
+      const t = new Date(w.date).getTime();
+      return t >= start.getTime() && t < end.getTime();
+    });
+    return {
+      sessions: chunk.length,
+      strengthVolume: chunk
+        .filter(w => !w.muscle.includes("有氧"))
+        .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.weight ?? 0) * (set.reps ?? 0), 0), 0),
+      cardioMinutes: chunk
+        .filter(w => w.muscle.includes("有氧"))
+        .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.duration ?? set.weight ?? 0), 0), 0),
+    };
+  };
+  const firstWorkoutDate = sortedWorkouts[0] ? new Date(sortedWorkouts[0].date) : null;
+  const toMonthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const monthOptions = (() => {
+    const start = firstWorkoutDate
+      ? new Date(firstWorkoutDate.getFullYear(), firstWorkoutDate.getMonth(), 1)
+      : new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth(), 1);
+    const list: Array<{ key: string; label: string; date: Date }> = [];
+    const cursor = new Date(start);
+    while (cursor.getTime() <= end.getTime()) {
+      list.push({
+        key: toMonthKey(cursor),
+        label: `${cursor.getFullYear()}年${cursor.getMonth() + 1}月`,
+        date: new Date(cursor),
+      });
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+    return list;
+  })();
+  const defaultStartKey = monthOptions[0]?.key ?? toMonthKey(now);
+  const defaultEndKey = monthOptions[monthOptions.length - 1]?.key ?? toMonthKey(now);
+  const selectedStartKey = monthOptions.some(m => m.key === compareStartKey) ? compareStartKey! : defaultStartKey;
+  const selectedEndKey = monthOptions.some(m => m.key === compareEndKey) ? compareEndKey! : defaultEndKey;
+  const selectedStartOption = monthOptions.find(m => m.key === selectedStartKey) ?? monthOptions[0];
+  const selectedEndOption = monthOptions.find(m => m.key === selectedEndKey) ?? monthOptions[monthOptions.length - 1];
+  const startMonthMetrics = selectedStartOption ? getMonthMetrics(selectedStartOption.date) : getMonthMetrics(now);
+  const endMonthMetrics = selectedEndOption ? getMonthMetrics(selectedEndOption.date) : getMonthMetrics(now);
+  const getGrowthPercent = (base: number, current: number) => {
+    if (base <= 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - base) / base) * 100);
+  };
+  const growthCompare = [
+    { label: "训练次数", first: startMonthMetrics.sessions, current: endMonthMetrics.sessions, unit: "次" },
+    { label: "力量总量", first: Math.round(startMonthMetrics.strengthVolume), current: Math.round(endMonthMetrics.strengthVolume), unit: "kg" },
+    { label: "有氧时长", first: Math.round(startMonthMetrics.cardioMinutes), current: Math.round(endMonthMetrics.cardioMinutes), unit: "min" },
+  ];
+
+  const milestones = (() => {
+    if (!sortedWorkouts.length) return [] as Array<{
+      key: string;
+      title: string;
+      desc: string;
+      date: string;
+      details: string[];
+    }>;
+    const firstDate = new Date(sortedWorkouts[0].date);
+    const dateKey = (d: string | Date) => new Date(d).toLocaleDateString("zh-CN");
+    const getDayDetails = (d: string | Date) => {
+      const key = dateKey(d);
+      const dayRecords = sortedWorkouts.filter(w => dateKey(w.date) === key);
+      return dayRecords.slice(0, 6).map(r => {
+        const isCardio = r.muscle.includes("有氧");
+        const best = isCardio
+          ? Math.max(...r.sets.map(s => s.duration ?? s.weight ?? 0), 0)
+          : Math.max(...r.sets.map(s => s.weight ?? 0), 0);
+        return `${r.exercise} · ${r.muscle} · ${r.sets.length}组 · 峰值${best}${isCardio ? "min" : "kg"}`;
+      });
+    };
+    const firstPRIdx = sortedWorkouts.findIndex((w, idx, arr) => {
+      if (idx === 0) return false;
+      const isCardio = w.muscle.includes("有氧");
+      const curMax = Math.max(...w.sets.map(s => isCardio ? (s.duration ?? s.weight ?? 0) : (s.weight ?? 0)), 0);
+      const prev = arr
+        .slice(0, idx)
+        .filter(p => p.exercise === w.exercise);
+      if (!prev.length) return false;
+      const prevMax = Math.max(...prev.flatMap(p => p.sets.map(s => isCardio ? (s.duration ?? s.weight ?? 0) : (s.weight ?? 0))), 0);
+      return curMax > prevMax;
+    });
+    let strengthAcc = 0;
+    let cardioAcc = 0;
+    let strengthMilestoneDate = "";
+    let cardioMilestoneDate = "";
+    for (const w of sortedWorkouts) {
+      if (w.muscle.includes("有氧")) {
+        cardioAcc += w.sets.reduce((s, set) => s + (set.duration ?? set.weight ?? 0), 0);
+        if (!cardioMilestoneDate && cardioAcc >= 300) cardioMilestoneDate = w.date;
+      } else {
+        strengthAcc += w.sets.reduce((s, set) => s + (set.weight ?? 0) * (set.reps ?? 0), 0);
+        if (!strengthMilestoneDate && strengthAcc >= 10000) strengthMilestoneDate = w.date;
+      }
+    }
+    const formatDate = (d: string | Date) => new Date(d).toLocaleDateString("zh-CN");
+    const list = [
+      {
+        key: `start-${formatDate(firstDate)}`,
+        title: "开启训练旅程",
+        desc: "完成第一条训练记录",
+        date: formatDate(firstDate),
+        details: getDayDetails(firstDate),
+      },
+      ...(firstPRIdx > -1
+        ? [{
+            key: `pr-${formatDate(sortedWorkouts[firstPRIdx].date)}`,
+            title: "首次突破 PR",
+            desc: `${sortedWorkouts[firstPRIdx].exercise} 刷新纪录`,
+            date: formatDate(sortedWorkouts[firstPRIdx].date),
+            details: getDayDetails(sortedWorkouts[firstPRIdx].date),
+          }]
+        : []),
+      ...(strengthMilestoneDate
+        ? [{
+            key: `strength-${formatDate(strengthMilestoneDate)}`,
+            title: "力量累计破万",
+            desc: "累计力量总量达到 10000kg",
+            date: formatDate(strengthMilestoneDate),
+            details: getDayDetails(strengthMilestoneDate),
+          }]
+        : []),
+      ...(cardioMilestoneDate
+        ? [{
+            key: `cardio-${formatDate(cardioMilestoneDate)}`,
+            title: "心肺里程碑",
+            desc: "累计有氧时长达到 300 分钟",
+            date: formatDate(cardioMilestoneDate),
+            details: getDayDetails(cardioMilestoneDate),
+          }]
+        : []),
+    ];
+    return list;
+  })();
+  const activeMilestone = milestones.find(m => m.key === activeMilestoneKey) ?? milestones[0] ?? null;
+  const modalMilestone = milestones.find(m => m.key === modalMilestoneKey) ?? null;
 
   // Muscle distribution pie
   const muscleDist = monthWorkouts.reduce((acc, w) => {
-    acc[w.muscle] = (acc[w.muscle] ?? 0) + 1;
+    const key = normalizeMuscle(w.muscle);
+    acc[key] = (acc[key] ?? 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
   const pieData = Object.entries(muscleDist).sort(([,a],[,b]) => b-a)
     .map(([name, value]) => ({ name: `${MUSCLE_EMOJI[name] ?? ""} ${name}`, value }));
-
-  const suggestions = [
-    consistencyScore < 40 ? "训练频率偏低，建议先稳定为每周 3 次打卡，再逐步加量。" : null,
-    cardioMinutes < 90 ? "本月有氧时长偏少，建议补充到每周 90-150 分钟中等强度有氧。" : null,
-    overloadRate < 20 ? "渐进超负荷不足，可以在主项每1-2周增加 2.5-5kg 或增加1-2次。" : null,
-    Object.keys(muscleDist).length < 4 ? "训练部位覆盖偏少，建议加入弱项部位，提升整体均衡性。" : null,
-  ].filter(Boolean) as string[];
 
   // Achievements
   const achievements = [
@@ -235,20 +430,168 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }}
-              className="grid grid-cols-3 gap-2.5 mb-4">
-              {[
-                { label: "一致性", val: consistencyScore, unit: "%", color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe" },
-                { label: "超负荷率", val: overloadRate, unit: "%", color: "#ea580c", bg: "#fff7ed", border: "#fed7aa" },
-                { label: "节奏评分", val: rhythmScore, unit: "分", color: "#0f766e", bg: "#ecfeff", border: "#99f6e4" },
-              ].map(s => (
-                <div key={s.label}
-                  className="rounded-2xl p-3.5 text-center border"
-                  style={{ background: s.bg, borderColor: s.border, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-                  <div className="font-black text-xl" style={{ color: s.color }}>{s.val}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">{s.unit} · {s.label}</div>
+              className="bg-white rounded-3xl border border-slate-100 p-5 mb-4"
+              style={{ boxShadow: "0 4px 24px rgba(79,70,229,0.08)" }}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="font-bold text-slate-800 text-sm">长期成长轨迹</h2>
+                  <p className="text-xs text-slate-400">过去6个月训练次数与负荷变化</p>
                 </div>
-              ))}
+                <span className="text-xs text-indigo-600 font-semibold">{profileLevel}</span>
+              </div>
+              <ResponsiveContainer width="100%" height={190}>
+                <LineChart data={monthlyGrowthData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="month" stroke="#cbd5e1" tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                  <YAxis stroke="#cbd5e1" tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                  <Tooltip contentStyle={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", fontSize: "12px" }} />
+                  <Line type="monotone" dataKey="训练次数" stroke="#2563eb" strokeWidth={2.5} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="训练负荷指数" stroke="#7c3aed" strokeWidth={2.5} dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+              <div className="grid grid-cols-3 gap-2 mt-3">
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
+                  <p className="text-xs text-slate-400">累计训练</p>
+                  <p className="font-black text-slate-700">{totalAllSessions} 次</p>
+                </div>
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
+                  <p className="text-xs text-slate-400">累计力量总量</p>
+                  <p className="font-black text-slate-700">{Math.round(totalAllStrengthVolume)} kg</p>
+                </div>
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
+                  <p className="text-xs text-slate-400">累计有氧时长</p>
+                  <p className="font-black text-slate-700">{Math.round(totalAllCardioMinutes)} min</p>
+                </div>
+              </div>
             </motion.div>
+
+            {growthCompare.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+                className="bg-white rounded-3xl border border-slate-100 p-5 mb-4"
+                style={{ boxShadow: "0 4px 24px rgba(79,70,229,0.08)" }}>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-bold text-slate-800 text-sm">成长对比卡</h2>
+                  <span className="text-xs text-slate-400">
+                    {selectedStartOption?.label ?? "起点月"} vs {selectedEndOption?.label ?? "当前月"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <label className="text-xs text-slate-500">
+                    起点月
+                    <select
+                      value={selectedStartKey}
+                      onChange={(e) => setCompareStartKey(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-700"
+                    >
+                      {monthOptions.map(opt => (
+                        <option key={`start-${opt.key}`} value={opt.key}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="text-xs text-slate-500">
+                    对比月
+                    <select
+                      value={selectedEndKey}
+                      onChange={(e) => setCompareEndKey(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-700"
+                    >
+                      {monthOptions.map(opt => (
+                        <option key={`end-${opt.key}`} value={opt.key}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <div className="space-y-2.5">
+                  {growthCompare.map(item => {
+                    const pct = getGrowthPercent(item.first, item.current);
+                    const up = pct >= 0;
+                    return (
+                      <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-slate-500">{item.label}</p>
+                          <p className={`text-xs font-semibold ${up ? "text-emerald-600" : "text-rose-500"}`}>
+                            {up ? "+" : ""}{pct}%
+                          </p>
+                        </div>
+                        <p className="text-sm font-bold text-slate-700 mt-1">
+                          {item.first}{item.unit} → {item.current}{item.unit}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+
+            {milestones.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.255 }}
+                className="bg-white rounded-3xl border border-slate-100 p-5 mb-4"
+                style={{ boxShadow: "0 4px 24px rgba(79,70,229,0.08)" }}>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-bold text-slate-800 text-sm">成长里程碑</h2>
+                  <span className="text-xs text-slate-400">长期记录</span>
+                </div>
+                <div className="space-y-3">
+                  {milestones.map((m, idx) => (
+                    <button
+                      key={m.key}
+                      type="button"
+                      onClick={() => {
+                        setActiveMilestoneKey(m.key);
+                        setModalMilestoneKey(m.key);
+                      }}
+                      className={`w-full text-left rounded-2xl px-2 py-1.5 transition ${activeMilestone?.key === m.key ? "bg-indigo-50/80" : "hover:bg-slate-50"}`}
+                    >
+                      <div className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className="w-3 h-3 rounded-full bg-indigo-500 mt-1.5" />
+                          {idx !== milestones.length - 1 && <div className="w-px flex-1 bg-indigo-100 mt-1" />}
+                        </div>
+                        <div className="pb-2">
+                          <p className="text-sm font-bold text-slate-700">{m.title}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{m.desc}</p>
+                          <p className="text-[11px] text-indigo-500 mt-1">{m.date}</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-3 text-xs text-indigo-500">点击任意里程碑可查看故事卡详情</p>
+              </motion.div>
+            )}
+
+            {modalMilestone && (
+              <div
+                className="fixed inset-0 z-[80] bg-slate-900/45 backdrop-blur-sm flex items-end sm:items-center justify-center p-3"
+                onClick={() => setModalMilestoneKey(null)}
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: 20, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  className="w-full max-w-md rounded-3xl border border-indigo-200 bg-white p-5 shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <p className="text-[11px] text-indigo-500">里程碑故事卡</p>
+                  <h3 className="font-black text-slate-800 mt-1">{modalMilestone.title}</h3>
+                  <p className="text-xs text-slate-500 mt-1">{modalMilestone.desc}</p>
+                  <p className="text-xs text-indigo-600 mt-1.5">{modalMilestone.date}</p>
+                  <div className="mt-3 rounded-2xl border border-indigo-100 bg-indigo-50 p-3 space-y-1.5">
+                    {modalMilestone.details.length > 0 ? modalMilestone.details.map(detail => (
+                      <p key={detail} className="text-xs text-indigo-700">{detail}</p>
+                    )) : (
+                      <p className="text-xs text-indigo-700">当天暂无可展示动作明细。</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setModalMilestoneKey(null)}
+                    className="mt-4 w-full rounded-xl bg-indigo-600 text-white py-2 text-sm font-bold"
+                  >
+                    关闭
+                  </button>
+                </motion.div>
+              </div>
+            )}
 
             {/* Weekly bar chart */}
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.26 }}
@@ -338,22 +681,23 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}
               className="bg-white rounded-3xl border border-slate-100 p-5 mb-4"
               style={{ boxShadow: "0 4px 24px rgba(79,70,229,0.08)" }}>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-bold text-slate-800 text-sm">训练建议</h2>
-                <span className="text-xs text-slate-400">科学性提示</span>
-              </div>
-              <div className="space-y-2">
-                {suggestions.length > 0 ? suggestions.map((s, i) => (
-                  <motion.div key={s}
-                    initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.34 + i * 0.05 }}
-                    className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">
-                    {s}
-                  </motion.div>
-                )) : (
-                  <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-700">
-                    训练结构较均衡，建议继续保持当前节奏并每月复盘一次动作质量。
+              <div className="mb-3 rounded-2xl border border-indigo-100 bg-indigo-50 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-indigo-500">训练画像</p>
+                    <p className="font-black text-indigo-700 mt-0.5">{profileLevel} · {focusType}</p>
                   </div>
-                )}
+                  <div className="text-right">
+                    <p className="text-xs text-indigo-400">平均强度</p>
+                    <p className="font-bold text-indigo-700">{avgIntensityScore || "--"} / 3</p>
+                  </div>
+                </div>
+                <p className="text-xs text-indigo-600 mt-2 leading-relaxed">
+                  {focusType === "力量主导型" && "你的训练明显偏向力量提升，建议每周补充2次中低强度有氧。"}
+                  {focusType === "心肺主导型" && "你更偏向有氧耐力，建议加入基础抗阻训练以保护关节并提高代谢。"}
+                  {focusType === "均衡发展型" && "训练结构较均衡，建议保持并按周期逐步提高主项负荷。"}
+                  {focusType === "未形成训练习惯" && "先建立固定训练频率，再逐步提高强度和训练总量。"}
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-2 mt-3">
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
