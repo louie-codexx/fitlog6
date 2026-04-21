@@ -133,7 +133,36 @@ export default function App() {
   };
 
   return (
-    <div className="size-full pb-24">
+    <div className="size-full pb-36 preview-theme">
+      <style>{`
+        .preview-theme {
+          background: #0b0b0e;
+          color: #f8f8f8;
+        }
+        .preview-theme .bg-white,
+        .preview-theme .bg-white\\/95,
+        .preview-theme .bg-white\\/90,
+        .preview-theme .bg-white\\/85,
+        .preview-theme .bg-white\\/80,
+        .preview-theme [class*="bg-slate-50"],
+        .preview-theme [class*="bg-slate-100"] {
+          background-color: #121217 !important;
+        }
+        .preview-theme [class*="text-slate-800"],
+        .preview-theme [class*="text-slate-700"],
+        .preview-theme [class*="text-slate-600"] {
+          color: #f3f4f6 !important;
+        }
+        .preview-theme [class*="text-slate-500"],
+        .preview-theme [class*="text-slate-400"] {
+          color: #a1a1aa !important;
+        }
+        .preview-theme [class*="border-slate-"],
+        .preview-theme [class*="border-blue-100"],
+        .preview-theme [class*="border-indigo-100"] {
+          border-color: #2a2a33 !important;
+        }
+      `}</style>
       {currentPage === "home" && (
         <HomePage
           onStartWorkout={() => setCurrentPage("workout")}
@@ -165,8 +194,12 @@ export default function App() {
       )}
 
       <div
-        className="fixed bottom-0 inset-x-0 z-50 border-t border-slate-200 bg-white/95 backdrop-blur-xl"
-        style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
+        className="fixed bottom-0 inset-x-0 z-50 border-t backdrop-blur-xl"
+        style={{
+          borderColor: "#2a2a33",
+          background: "rgba(16,16,22,0.95)",
+          paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
+        }}
       >
         <div className="max-w-lg mx-auto grid grid-cols-4 gap-1 px-2 py-2">
           {[
@@ -181,8 +214,9 @@ export default function App() {
                 key={tab.key}
                 onClick={() => setCurrentPage(tab.key)}
                 className={`rounded-xl py-2 text-center transition-all ${
-                  active ? "bg-indigo-600 text-white shadow-md" : "text-slate-500 hover:bg-slate-100"
+                  active ? "text-black shadow-md" : "text-zinc-400 hover:bg-zinc-900"
                 }`}
+                style={active ? { background: "#c9ff2f" } : {}}
               >
                 <div className="text-base leading-none">{tab.icon}</div>
                 <div className="text-xs font-semibold mt-1">{tab.label}</div>

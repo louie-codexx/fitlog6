@@ -112,10 +112,10 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
   });
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #eff6ff 0%, #f0f4ff 50%, #f8faff 100%)" }}>
+    <div className="min-h-screen" style={{ background: "radial-gradient(circle at top, #1a1a24 0%, #0b0b0f 55%, #08080b 100%)" }}>
       {/* Sticky header */}
       <div className="sticky top-0 z-30 border-b border-blue-100/80"
-        style={{ background: "rgba(239,246,255,0.9)", backdropFilter: "blur(16px)" }}>
+        style={{ background: "rgba(14,14,20,0.9)", backdropFilter: "blur(16px)", borderColor: "#2a2a33" }}>
         <div className="max-w-lg mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
             <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }} onClick={onBack}
@@ -209,7 +209,7 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-5 pb-12">
+      <div className="max-w-lg mx-auto px-4 py-5 pb-28">
         {workouts.length === 0 ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-24">
             <div className="w-20 h-20 rounded-3xl mx-auto mb-5 flex items-center justify-center text-4xl bg-white shadow-sm border border-slate-100">📭</div>
@@ -354,7 +354,7 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
                   <button onClick={() => setExpandedDate(expandedDate === date ? null : date)}
                     className="w-full flex items-center gap-3.5 p-4 hover:bg-slate-50 transition-colors">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg, #eff6ff, #e0e7ff)", border: "1px solid #bfdbfe" }}>
+                      style={{ background: "linear-gradient(135deg, #1a1a26, #11111c)", border: "1px solid #3a3a52" }}>
                       <Calendar className="w-4 h-4 text-indigo-600" />
                     </div>
                     <div className="flex-1 text-left">

@@ -205,7 +205,7 @@ export function HomePage({
   });
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #eff6ff 0%, #f0f4ff 50%, #faf5ff 100%)" }}>
+    <div className="min-h-screen" style={{ background: "radial-gradient(circle at top, #1a1a24 0%, #0b0b0f 55%, #08080b 100%)" }}>
       {/* Hero gradient section */}
       <div className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1d4ed8 0%, #4f46e5 60%, #7c3aed 100%)" }}>
         {/* Decorative circles */}
@@ -361,9 +361,9 @@ export function HomePage({
 
       {/* Rounded top clipping */}
       <div className="relative -mt-3 z-10 rounded-t-[28px] overflow-hidden"
-        style={{ background: "linear-gradient(160deg, #eff6ff 0%, #f0f4ff 50%, #faf5ff 100%)" }}
+        style={{ background: "linear-gradient(160deg, #13131b 0%, #0d0d13 60%, #09090d 100%)" }}
       >
-        <div className="max-w-lg mx-auto px-5 pt-7 pb-12">
+        <div className="max-w-lg mx-auto px-5 pt-7 pb-28">
 
           {/* START WORKOUT Button */}
           <motion.button
@@ -483,7 +483,7 @@ export function HomePage({
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}
             className="mb-7 p-5 rounded-2xl border border-indigo-100 relative overflow-hidden"
-            style={{ background: "linear-gradient(135deg, #eff6ff, #f0f4ff)", boxShadow: "0 2px 12px rgba(79,70,229,0.08)" }}
+            style={{ background: "linear-gradient(135deg, #141420, #10101a)", boxShadow: "0 2px 16px rgba(124,58,237,0.22)" }}
           >
             <div className="absolute -right-3 -top-3 text-8xl opacity-8 select-none">"</div>
             <AnimatePresence mode="wait">

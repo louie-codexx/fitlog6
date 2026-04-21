@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft, Award, Calendar, Flame, TrendingUp, Zap, Star, Target, BarChart3 } from "lucide-react";
 import {
@@ -15,7 +15,7 @@ const MUSCLE_EMOJI: Record<string, string> = {
 };
 
 interface StatCardProps {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: string | number;
   unit: string;
@@ -363,10 +363,10 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
   const unlockedCount = achievements.filter(a => a.done).length;
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #eff6ff 0%, #f0f4ff 60%, #faf5ff 100%)" }}>
+    <div className="min-h-screen" style={{ background: "radial-gradient(circle at top, #1a1a24 0%, #0b0b0f 55%, #08080b 100%)" }}>
       {/* Sticky header */}
       <div className="sticky top-0 z-30 border-b border-blue-100/80"
-        style={{ background: "rgba(239,246,255,0.9)", backdropFilter: "blur(16px)" }}>
+        style={{ background: "rgba(14,14,20,0.9)", backdropFilter: "blur(16px)", borderColor: "#2a2a33" }}>
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-3">
           <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }} onClick={onBack}
             className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm">
@@ -379,7 +379,7 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-5 pb-12">
+      <div className="max-w-lg mx-auto px-4 py-5 pb-28">
         {workouts.length === 0 ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-24">
             <div className="w-20 h-20 rounded-3xl mx-auto mb-5 flex items-center justify-center text-4xl bg-white shadow-sm border border-slate-100">📊</div>

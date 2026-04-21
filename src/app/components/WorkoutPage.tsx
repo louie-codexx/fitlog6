@@ -248,7 +248,7 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #eff6ff 0%, #f0f4ff 60%, #faf5ff 100%)" }}>
+    <div className="min-h-screen" style={{ background: "radial-gradient(circle at top, #1a1a24 0%, #0b0b0f 55%, #08080b 100%)" }}>
 
       {/* PR Flash Overlay */}
       <AnimatePresence>
@@ -291,7 +291,7 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
 
       {/* Header */}
       <div className="sticky top-0 z-30 border-b border-indigo-100/80"
-        style={{ background: "rgba(239,246,255,0.85)", backdropFilter: "blur(16px)" }}>
+        style={{ background: "rgba(14,14,20,0.86)", backdropFilter: "blur(16px)", borderColor: "#2a2a33" }}>
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
@@ -345,7 +345,7 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
       </AnimatePresence>
 
       {/* Content */}
-      <div className="max-w-lg mx-auto px-4 py-5 pb-32">
+      <div className="max-w-lg mx-auto px-4 py-5 pb-44">
         <div className="space-y-3">
           <AnimatePresence mode="popLayout">
             {blocks.map(block => {
@@ -489,6 +489,19 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                                   </button>
                                 ))}
                               </div>
+                              <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-xs text-slate-400">可自定义输入次数</span>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    value={reps}
+                                    step={1}
+                                    onChange={(e) => setReps(Math.max(1, Number(e.target.value) || 1))}
+                                    className="w-24 h-8 rounded-lg border border-slate-200 px-2 text-sm text-slate-700"
+                                  />
+                                </div>
+                              </div>
                             </div>
                           )}
 
@@ -588,7 +601,7 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
         {blocks.length === 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-20">
             <div className="w-20 h-20 rounded-3xl mx-auto mb-5 flex items-center justify-center text-4xl"
-              style={{ background: "linear-gradient(135deg, #eff6ff, #f0f4ff)", boxShadow: "0 8px 32px rgba(79,70,229,0.15)" }}>
+              style={{ background: "linear-gradient(135deg, #1b1b28, #121220)", boxShadow: "0 8px 32px rgba(124,58,237,0.28)" }}>
               🏋️
             </div>
             <p className="font-bold text-slate-700 text-lg">准备开始训练</p>
