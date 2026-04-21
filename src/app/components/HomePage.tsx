@@ -16,7 +16,6 @@ const QUOTES = [
 ];
 
 const HERO_IMAGE_KEY = "fitlog-home-hero-image";
-const REMINDER_KEY = "fitlog-reminder-settings";
 const GOALS_KEY = "fitlog-goal-settings";
 const QUOTE_INDEX_KEY = "fitlog-home-quote-index";
 const DEFAULT_HERO_IMAGE =
@@ -77,8 +76,6 @@ export function HomePage({
   const [quoteVisible, setQuoteVisible] = useState(true);
   const [heroImage, setHeroImage] = useState(DEFAULT_HERO_IMAGE);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const [reminderEnabled, setReminderEnabled] = useState(false);
-  const [reminderTime, setReminderTime] = useState("19:30");
   const [goals, setGoals] = useState({
     weeklySessions: 4,
     cardioMinutes: 120,
@@ -131,16 +128,6 @@ export function HomePage({
     if (saved) setHeroImage(saved);
   }, []);
   useEffect(() => {
-    const savedReminder = localStorage.getItem(REMINDER_KEY);
-    if (savedReminder) {
-      try {
-        const parsed = JSON.parse(savedReminder);
-        setReminderEnabled(Boolean(parsed.enabled));
-        setReminderTime(parsed.time ?? "19:30");
-      } catch {
-        // ignore parse failure
-      }
-    }
     const savedGoals = localStorage.getItem(GOALS_KEY);
     if (savedGoals) {
       try {
@@ -151,25 +138,8 @@ export function HomePage({
     }
   }, []);
   useEffect(() => {
-    localStorage.setItem(REMINDER_KEY, JSON.stringify({ enabled: reminderEnabled, time: reminderTime }));
-  }, [reminderEnabled, reminderTime]);
-  useEffect(() => {
     localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
   }, [goals]);
-  useEffect(() => {
-    if (!reminderEnabled) return;
-    const timer = setInterval(() => {
-      const now = new Date();
-      const hm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-      const dayTag = now.toLocaleDateString("zh-CN");
-      const lastTag = localStorage.getItem("fitlog-reminder-last-day");
-      if (hm === reminderTime && lastTag !== dayTag) {
-        alert("Fitlog 提醒：该训练啦，今天也要完成打卡！");
-        localStorage.setItem("fitlog-reminder-last-day", dayTag);
-      }
-    }, 30000);
-    return () => clearInterval(timer);
-  }, [reminderEnabled, reminderTime]);
 
   const dateStr = new Date().toLocaleDateString("zh-CN", {
     month: "long", day: "numeric", weekday: "long",
@@ -411,34 +381,6 @@ export function HomePage({
 
           <motion.div
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-            className="rounded-2xl border border-slate-200 bg-white p-4 mb-6"
-            style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
-          >
-            <div className="flex items-center justify-between mb-2.5">
-              <h3 className="font-bold text-slate-800 text-sm">训练提醒</h3>
-              <label className="inline-flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={reminderEnabled}
-                  onChange={(e) => setReminderEnabled(e.target.checked)}
-                  className="w-4 h-4 accent-lime-400"
-                />
-                <span className="text-xs text-slate-600">{reminderEnabled ? "已开启" : "已关闭"}</span>
-              </label>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="time"
-                value={reminderTime}
-                onChange={(e) => setReminderTime(e.target.value)}
-                className="h-9 px-2 rounded-lg border border-slate-200 text-sm text-slate-700"
-              />
-              <p className="text-xs text-slate-500">到点会弹出训练提醒。</p>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.33 }}
             className="rounded-2xl border border-slate-200 bg-white p-4 mb-6"
             style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
           >
