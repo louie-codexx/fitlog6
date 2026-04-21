@@ -231,7 +231,7 @@ export default function App() {
                 }
               >
                 <div className="text-base leading-none">{tab.icon}</div>
-                <div className="text-xs font-semibold mt-1">{tab.label}</div>
+                <div className="text-sm font-semibold mt-1">{tab.label}</div>
               </button>
             );
           })}

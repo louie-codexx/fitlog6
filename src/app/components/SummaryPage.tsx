@@ -482,8 +482,11 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
               style={{ boxShadow: "0 4px 24px rgba(79,70,229,0.08)" }}>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="font-bold text-slate-800 text-sm">长期成长轨迹</h2>
-                  <p className="text-xs text-slate-400">过去6个月训练次数与负荷变化</p>
+                  <div className="flex items-center gap-2.5 mb-1">
+                    <span className="inline-block h-5 w-1 rounded-full bg-lime-300 shadow-[0_0_10px_rgba(201,255,47,0.55)]" />
+                    <h2 className="font-black text-zinc-100 text-sm">长期成长轨迹</h2>
+                  </div>
+                  <p className="text-xs text-zinc-300">过去6个月训练次数与负荷变化</p>
                 </div>
                 <span className="text-xs text-lime-300 font-semibold">{profileLevel}</span>
               </div>
@@ -518,7 +521,10 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
                 className="bg-white rounded-3xl border border-slate-100 p-5 mb-4"
                 style={{ boxShadow: "0 4px 24px rgba(79,70,229,0.08)" }}>
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-bold text-slate-800 text-sm">成长对比卡</h2>
+                  <div className="flex items-center gap-2.5">
+                    <span className="inline-block h-5 w-1 rounded-full bg-lime-300 shadow-[0_0_10px_rgba(201,255,47,0.55)]" />
+                    <h2 className="font-black text-zinc-100 text-sm">成长对比卡</h2>
+                  </div>
                   <span className="text-xs text-slate-400">
                     {selectedStartOption?.label ?? "起点月"} vs {selectedEndOption?.label ?? "当前月"}
                   </span>
@@ -576,8 +582,11 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
                 className="bg-white rounded-3xl border border-slate-100 p-5 mb-4"
                 style={{ boxShadow: "0 4px 24px rgba(79,70,229,0.08)" }}>
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-bold text-slate-800 text-sm">成长里程碑</h2>
-                  <span className="text-xs text-slate-400">长期记录</span>
+                  <div className="flex items-center gap-2.5">
+                    <span className="inline-block h-5 w-1 rounded-full bg-lime-300 shadow-[0_0_10px_rgba(201,255,47,0.55)]" />
+                    <h2 className="font-black text-zinc-100 text-sm">成长里程碑</h2>
+                  </div>
+                  <span className="text-xs text-zinc-300">长期记录</span>
                 </div>
                 <div className="space-y-3">
                   {milestones.map((m, idx) => (
@@ -650,12 +659,13 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
               className="bg-white rounded-3xl border border-slate-100 p-5 mb-4"
               style={{ boxShadow: "0 4px 24px rgba(79,70,229,0.08)" }}>
               <div className="flex items-center gap-2 mb-4">
+                <span className="inline-block h-5 w-1 rounded-full bg-lime-300 shadow-[0_0_10px_rgba(201,255,47,0.55)]" />
                 <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
                   <BarChart3 className="w-4 h-4 text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="font-bold text-slate-800 text-sm">本周训练频率</h2>
-                  <p className="text-xs text-slate-400">过去7天数据</p>
+                  <h2 className="font-black text-zinc-100 text-sm">本周训练频率</h2>
+                  <p className="text-xs text-zinc-300">过去7天数据</p>
                 </div>
               </div>
               <ResponsiveContainer width="100%" height={180}>
@@ -682,12 +692,13 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
                 className="bg-white rounded-3xl border border-slate-100 p-5 mb-4"
                 style={{ boxShadow: "0 4px 24px rgba(79,70,229,0.08)" }}>
                 <div className="flex items-center gap-2 mb-4">
+                  <span className="inline-block h-5 w-1 rounded-full bg-lime-300 shadow-[0_0_10px_rgba(201,255,47,0.55)]" />
                   <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
                     <TrendingUp className="w-4 h-4 text-emerald-600" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-slate-800 text-sm">力量能力画像</h2>
-                    <p className="text-xs text-slate-400">动作估算1RM（Epley）Top {oneRMData.length}</p>
+                    <h2 className="font-black text-zinc-100 text-sm">力量能力画像</h2>
+                    <p className="text-xs text-zinc-300">动作估算1RM（Epley）Top {oneRMData.length}</p>
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={190}>
@@ -708,12 +719,13 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
                 className="bg-white rounded-3xl border border-slate-100 p-5 mb-4"
                 style={{ boxShadow: "0 4px 24px rgba(79,70,229,0.08)" }}>
                 <div className="flex items-center gap-2 mb-4">
+                  <span className="inline-block h-5 w-1 rounded-full bg-lime-300 shadow-[0_0_10px_rgba(201,255,47,0.55)]" />
                   <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center">
                     <TrendingUp className="w-4 h-4 text-purple-600" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-slate-800 text-sm">本月部位分布</h2>
-                    <p className="text-xs text-slate-400">各部位训练占比</p>
+                    <h2 className="font-black text-zinc-100 text-sm">本月部位分布</h2>
+                    <p className="text-xs text-zinc-300">各部位训练占比</p>
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={220}>
@@ -769,11 +781,12 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
               style={{ boxShadow: "0 4px 24px rgba(79,70,229,0.08)" }}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
+                  <span className="inline-block h-5 w-1 rounded-full bg-lime-300 shadow-[0_0_10px_rgba(201,255,47,0.55)]" />
                   <div className="w-8 h-8 rounded-xl bg-lime-300/20 border border-lime-300/40 flex items-center justify-center">
                     <Award className="w-4 h-4 text-lime-300" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-zinc-100 text-sm">成就系统（无限成长）</h2>
+                    <h2 className="font-black text-zinc-100 text-sm">成就系统（无限成长）</h2>
                     <p className="text-xs text-zinc-300">累计等级 Lv.{totalAchievementLevel}</p>
                   </div>
                 </div>

@@ -833,13 +833,13 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setShowCustomExerciseModal(false)}
-                  className="h-10 rounded-xl border border-zinc-600 bg-zinc-800 text-zinc-200 font-semibold"
+                  className="h-10 rounded-xl border border-zinc-600 bg-zinc-800 text-zinc-200 text-sm font-semibold"
                 >
                   取消
                 </button>
                 <button
                   onClick={submitCustomExercise}
-                  className="h-10 rounded-xl bg-lime-300 text-black font-black"
+                  className="h-10 rounded-xl bg-lime-300 text-black text-sm font-black"
                 >
                   添加
                 </button>

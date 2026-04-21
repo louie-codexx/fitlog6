@@ -83,6 +83,10 @@ export function HomePage({
   });
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [newUserName, setNewUserName] = useState("");
+  const [cropSource, setCropSource] = useState<string | null>(null);
+  const [cropZoom, setCropZoom] = useState(1);
+  const [cropX, setCropX] = useState(50);
+  const [cropY, setCropY] = useState(50);
 
   const greeting = getGreeting();
   const today = new Date().toLocaleDateString("zh-CN");
@@ -152,10 +156,40 @@ export function HomePage({
     reader.onload = () => {
       const url = String(reader.result ?? "");
       if (!url) return;
-      setHeroImage(url);
-      localStorage.setItem(HERO_IMAGE_KEY, url);
+      setCropSource(url);
+      setCropZoom(1);
+      setCropX(50);
+      setCropY(50);
     };
     reader.readAsDataURL(file);
+    event.target.value = "";
+  };
+  const applyImageCrop = () => {
+    if (!cropSource) return;
+    const img = new Image();
+    img.onload = () => {
+      const outW = 1600;
+      const outH = 900;
+      const canvas = document.createElement("canvas");
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const coverScale = Math.max(outW / img.width, outH / img.height);
+      const scale = coverScale * cropZoom;
+      const drawW = img.width * scale;
+      const drawH = img.height * scale;
+      const offsetX = (outW - drawW) * (cropX / 100);
+      const offsetY = (outH - drawH) * (cropY / 100);
+
+      ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+      const cropped = canvas.toDataURL("image/jpeg", 0.92);
+      setHeroImage(cropped);
+      localStorage.setItem(HERO_IMAGE_KEY, cropped);
+      setCropSource(null);
+    };
+    img.src = cropSource;
   };
   const submitCreateUser = () => {
     const name = newUserName.trim();
@@ -237,7 +271,7 @@ export function HomePage({
               src={heroImage}
               alt="运动封面"
               onClick={() => imageInputRef.current?.click()}
-              className="w-full h-40 object-cover rounded-xl border border-white/20 cursor-pointer"
+              className="w-full h-56 object-cover rounded-xl border border-white/20 cursor-pointer"
             />
             <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
           </div>
@@ -248,7 +282,7 @@ export function HomePage({
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowCreateUserModal(true)}
-                  className="h-8 px-2.5 rounded-lg bg-white/20 text-white text-xs border border-white/25"
+                  className="h-8 px-2.5 rounded-lg bg-white/20 text-white text-sm border border-white/25"
                 >
                   新建用户
                 </button>
@@ -257,7 +291,7 @@ export function HomePage({
                     if (users.length <= 1) return;
                     if (confirm("删除当前用户及其所有训练记录？")) onDeleteCurrentUser();
                   }}
-                  className="h-8 px-2.5 rounded-lg bg-red-500/30 text-white text-xs border border-red-200/30"
+                  className="h-8 px-2.5 rounded-lg bg-red-500/30 text-white text-sm border border-red-200/30"
                 >
                   删除用户
                 </button>
@@ -268,7 +302,7 @@ export function HomePage({
                 <button
                   key={user}
                   onClick={() => onSwitchUser(user)}
-                  className={`h-8 rounded-lg text-xs font-semibold border ${
+                  className={`h-8 rounded-lg text-sm font-semibold border ${
                     user === currentUser
                       ? "text-black border-lime-200"
                       : "bg-white/15 text-zinc-300 border-white/20 hover:bg-white/25"
@@ -411,18 +445,18 @@ export function HomePage({
                 title="每周力量总量目标"
               />
             </div>
-            <div className="space-y-2.5">
+            <div className="space-y-4">
               {goalProgress.map(item => {
                 const pct = getGoalPercent(item.current, item.target);
                 return (
                   <div key={item.label}>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-slate-600">{item.label}</span>
-                      <span className="font-semibold" style={{ color: item.color }}>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-600 font-semibold">{item.label}</span>
+                      <span className="font-bold text-base" style={{ color: item.color }}>
                         {item.current}/{item.target} {item.unit}
                       </span>
                     </div>
-                    <div className="h-2 rounded-full bg-slate-100 mt-1 overflow-hidden">
+                    <div className="h-2.5 rounded-full bg-slate-100 mt-1.5 overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${pct}%` }}
@@ -511,6 +545,96 @@ export function HomePage({
         </div>
       </div>
       <AnimatePresence>
+        {cropSource && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[95] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setCropSource(null)}
+          >
+            <motion.div
+              initial={{ y: 20, scale: 0.96, opacity: 0 }}
+              animate={{ y: 0, scale: 1, opacity: 1 }}
+              exit={{ y: 10, scale: 0.98, opacity: 0 }}
+              className="w-full max-w-md rounded-2xl border border-zinc-700 bg-zinc-900 p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-zinc-100 font-black text-lg">调整封面裁剪</h3>
+              <p className="text-zinc-300 text-xs mt-1">拖动滑杆，选择你想展示的区域</p>
+
+              <div className="mt-3 h-56 rounded-xl overflow-hidden border border-zinc-700 relative">
+                <img
+                  src={cropSource}
+                  alt="裁剪预览"
+                  className="w-full h-full object-cover"
+                  style={{
+                    objectPosition: `${cropX}% ${cropY}%`,
+                    transform: `scale(${cropZoom})`,
+                    transformOrigin: "center center",
+                  }}
+                />
+              </div>
+
+              <div className="mt-4 space-y-3">
+                <label className="block text-xs text-zinc-300">
+                  缩放 {cropZoom.toFixed(2)}x
+                  <input
+                    type="range"
+                    min={1}
+                    max={2.4}
+                    step={0.01}
+                    value={cropZoom}
+                    onChange={(e) => setCropZoom(Number(e.target.value))}
+                    className="mt-1 w-full accent-lime-300"
+                  />
+                </label>
+                <label className="block text-xs text-zinc-300">
+                  水平位置
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={cropX}
+                    onChange={(e) => setCropX(Number(e.target.value))}
+                    className="mt-1 w-full accent-lime-300"
+                  />
+                </label>
+                <label className="block text-xs text-zinc-300">
+                  垂直位置
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={cropY}
+                    onChange={(e) => setCropY(Number(e.target.value))}
+                    className="mt-1 w-full accent-lime-300"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setCropSource(null)}
+                  className="h-10 rounded-xl border border-zinc-600 bg-zinc-800 text-zinc-200 text-sm font-semibold"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={applyImageCrop}
+                  className="h-10 rounded-xl bg-lime-300 text-black text-sm font-black"
+                >
+                  保存封面
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {showCreateUserModal && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -538,13 +662,13 @@ export function HomePage({
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setShowCreateUserModal(false)}
-                  className="h-10 rounded-xl border border-zinc-600 bg-zinc-800 text-zinc-200 font-semibold"
+                className="h-10 rounded-xl border border-zinc-600 bg-zinc-800 text-zinc-200 text-sm font-semibold"
                 >
                   取消
                 </button>
                 <button
                   onClick={submitCreateUser}
-                  className="h-10 rounded-xl bg-lime-300 text-black font-black"
+                className="h-10 rounded-xl bg-lime-300 text-black text-sm font-black"
                 >
                   确定
                 </button>

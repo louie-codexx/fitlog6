@@ -202,7 +202,7 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
                 whileHover={{ y: -1 }}
                 whileTap={{ scale: 0.96 }}
                 onClick={() => setRangeDays(opt.days)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition-all ${
                   rangeDays === opt.days
                     ? "bg-lime-300 text-black border-lime-200"
                     : "bg-white border-slate-200 text-slate-600 hover:border-lime-300"
@@ -247,13 +247,14 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
               className="bg-white rounded-3xl border border-slate-100 p-5 mb-4"
               style={{ boxShadow: "0 4px 24px rgba(79,70,229,0.08)" }}>
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-3 rounded-xl border border-zinc-700/70 bg-zinc-900/55 px-3 py-2">
+                <span className="inline-block h-5 w-1 rounded-full bg-lime-300 shadow-[0_0_10px_rgba(201,255,47,0.55)]" />
                 <div className="w-8 h-8 rounded-xl bg-sky-50 flex items-center justify-center">
                   <TrendingUp className="w-4 h-4 text-sky-600" />
                 </div>
                 <div>
-                  <h2 className="font-bold text-slate-800 text-sm">训练负荷趋势</h2>
-                  <p className="text-xs text-slate-400">近14天（力量+有氧综合负荷）</p>
+                  <h2 className="font-black text-zinc-100 text-sm">训练负荷趋势</h2>
+                  <p className="text-xs text-zinc-300">近14天（力量+有氧综合负荷）</p>
                 </div>
               </div>
               <ResponsiveContainer width="100%" height={150}>
@@ -281,13 +282,14 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
                 className="bg-white rounded-3xl border border-slate-100 p-5 mb-4"
                 style={{ boxShadow: "0 4px 24px rgba(79,70,229,0.08)" }}>
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-4 rounded-xl border border-zinc-700/70 bg-zinc-900/55 px-3 py-2">
+                  <span className="inline-block h-5 w-1 rounded-full bg-lime-300 shadow-[0_0_10px_rgba(201,255,47,0.55)]" />
                   <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center">
                     <TrendingUp className="w-4 h-4 text-indigo-600" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-slate-800 text-sm">力量趋势</h2>
-                    <p className="text-xs text-slate-400">近 {chartData.length} 条记录</p>
+                    <h2 className="font-black text-zinc-100 text-sm">力量趋势</h2>
+                    <p className="text-xs text-zinc-300">近 {chartData.length} 条记录</p>
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={160}>
@@ -316,12 +318,13 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
                 className="bg-white rounded-3xl border border-slate-100 p-5 mb-4"
                 style={{ boxShadow: "0 4px 24px rgba(79,70,229,0.08)" }}>
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-4 rounded-xl border border-zinc-700/70 bg-zinc-900/55 px-3 py-2">
+                  <span className="inline-block h-5 w-1 rounded-full bg-lime-300 shadow-[0_0_10px_rgba(201,255,47,0.55)]" />
                   <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center">
                     <Trophy className="w-4 h-4 text-amber-500" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-zinc-100 text-sm">个人最高纪录</h2>
+                    <h2 className="font-black text-zinc-100 text-sm">个人最高纪录</h2>
                     <p className="text-xs text-zinc-300">仅统计力量训练部位最高重量</p>
                   </div>
                 </div>
