@@ -6,12 +6,12 @@ import type { WorkoutRecord } from "../App";
 import { BOTTOM_SPACING } from "../layoutSpacing";
 
 const MUSCLE_COLORS: Record<string, { bg: string; text: string; border: string; dot: string }> = {
-  "胸":   { bg: "bg-rose-50",    text: "text-rose-600",   border: "border-rose-200",   dot: "bg-rose-500" },
-  "背":   { bg: "bg-blue-50",    text: "text-blue-600",   border: "border-blue-200",   dot: "bg-blue-500" },
-  "肩":   { bg: "bg-amber-50",   text: "text-amber-600",  border: "border-amber-200",  dot: "bg-amber-500" },
-  "腿":   { bg: "bg-emerald-50", text: "text-emerald-600",border: "border-emerald-200",dot: "bg-emerald-500" },
-  "手臂": { bg: "bg-purple-50",  text: "text-purple-600", border: "border-purple-200", dot: "bg-purple-500" },
-  "有氧": { bg: "bg-teal-50",    text: "text-teal-600",   border: "border-teal-200",   dot: "bg-teal-500" },
+  "胸":   { bg: "bg-rose-900/35",    text: "text-rose-200",   border: "border-rose-500/40",   dot: "bg-rose-400" },
+  "背":   { bg: "bg-blue-900/35",    text: "text-blue-200",   border: "border-blue-500/40",   dot: "bg-blue-400" },
+  "肩":   { bg: "bg-amber-900/35",   text: "text-amber-200",  border: "border-amber-500/40",  dot: "bg-amber-400" },
+  "腿":   { bg: "bg-emerald-900/35", text: "text-emerald-200",border: "border-emerald-500/40",dot: "bg-emerald-400" },
+  "手臂": { bg: "bg-purple-900/35",  text: "text-purple-200", border: "border-purple-500/40", dot: "bg-purple-400" },
+  "有氧": { bg: "bg-teal-900/35",    text: "text-teal-200",   border: "border-teal-500/40",   dot: "bg-teal-400" },
 };
 
 const MUSCLE_HEX: Record<string, string> = {
@@ -70,17 +70,22 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
       date: new Date(w.date).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" }),
     }));
 
-  // PR records
-  const prs = workouts.reduce((acc, w) => {
-    const key = `${w.muscle}|${w.exercise}`;
-    const max = Math.max(
-      ...w.sets.map(s => (w.muscle.includes("有氧") ? (s.duration ?? s.weight ?? 0) : (s.weight ?? 0)))
-    );
-    if (!acc[key] || max > acc[key]) acc[key] = max;
-    return acc;
-  }, {} as Record<string, number>);
+  // PR records (strength only, one best per muscle)
+  const prByMuscle = workouts
+    .filter(w => !w.muscle.includes("有氧"))
+    .reduce((acc, w) => {
+      const muscle = normalizeMuscle(w.muscle);
+      const maxWeight = Math.max(...w.sets.map(s => s.weight ?? 0), 0);
+      const prev = acc[muscle];
+      if (!prev || maxWeight > prev.weight) {
+        acc[muscle] = { weight: maxWeight, exercise: w.exercise };
+      }
+      return acc;
+    }, {} as Record<string, { weight: number; exercise: string }>);
 
-  const prEntries = Object.entries(prs).sort(([, a], [, b]) => b - a).slice(0, 8);
+  const prEntries = Object.entries(prByMuscle)
+    .sort(([, a], [, b]) => b.weight - a.weight)
+    .slice(0, 8);
   const strengthVolume = filtered
     .filter(w => !w.muscle.includes("有氧"))
     .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.weight ?? 0) * (set.reps ?? 0), 0), 0);
@@ -228,13 +233,13 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
               className="grid grid-cols-3 gap-2.5 mb-4"
             >
               {[
-                { label: "力量总容量", value: Math.round(strengthVolume), unit: "kg", c: "text-indigo-600", bg: "bg-indigo-50 border-indigo-100" },
-                { label: "有氧总时长", value: Math.round(cardioMinutes), unit: "min", c: "text-teal-600", bg: "bg-teal-50 border-teal-100" },
-                { label: "最佳估算1RM", value: Math.round(bestE1RM), unit: "kg", c: "text-amber-600", bg: "bg-amber-50 border-amber-100" },
+                { label: "力量总容量", value: Math.round(strengthVolume), unit: "kg", c: "text-lime-300", bg: "bg-zinc-900 border-zinc-700" },
+                { label: "有氧总时长", value: Math.round(cardioMinutes), unit: "min", c: "text-cyan-300", bg: "bg-zinc-900 border-zinc-700" },
+                { label: "最佳估算1RM", value: Math.round(bestE1RM), unit: "kg", c: "text-amber-300", bg: "bg-zinc-900 border-zinc-700" },
               ].map(s => (
                 <div key={s.label} className={`rounded-2xl border p-3 text-center ${s.bg}`}>
                   <div className={`font-black text-xl ${s.c}`}>{s.value}</div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">{s.unit} · {s.label}</div>
+                  <div className="text-[11px] text-zinc-300 mt-0.5">{s.unit} · {s.label}</div>
                 </div>
               ))}
             </motion.div>
@@ -263,7 +268,8 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
                   <XAxis dataKey="d" stroke="#cbd5e1" tick={{ fontSize: 10, fill: "#94a3b8" }} />
                   <YAxis stroke="#cbd5e1" tick={{ fontSize: 10, fill: "#94a3b8" }} />
                   <Tooltip
-                    contentStyle={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", fontSize: "12px", boxShadow: "0 4px 16px rgba(0,0,0,0.1)" }}
+                    contentStyle={{ background: "#101014", border: "1px solid #3f3f46", borderRadius: "12px", fontSize: "12px", color: "#f4f4f5", boxShadow: "0 4px 16px rgba(0,0,0,0.35)" }}
+                    labelStyle={{ color: "#d4d4d8" }}
                   />
                   <Area type="monotone" dataKey="负荷" stroke="#0ea5e9" strokeWidth={2.4} fill="url(#loadGrad)" />
                 </AreaChart>
@@ -296,8 +302,8 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
                     <XAxis dataKey="date" stroke="#cbd5e1" tick={{ fontSize: 10, fill: "#94a3b8" }} />
                     <YAxis stroke="#cbd5e1" tick={{ fontSize: 10, fill: "#94a3b8" }} />
                     <Tooltip
-                      contentStyle={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "12px", fontSize: "12px", boxShadow: "0 4px 16px rgba(0,0,0,0.1)" }}
-                      labelStyle={{ color: "#64748b" }} />
+                      contentStyle={{ background: "#101014", border: "1px solid #3f3f46", borderRadius: "12px", fontSize: "12px", color: "#f4f4f5", boxShadow: "0 4px 16px rgba(0,0,0,0.35)" }}
+                      labelStyle={{ color: "#d4d4d8" }} />
                     <Area type="monotone" dataKey="最大重量" stroke="#2563eb" strokeWidth={2.5} fill="url(#blueGrad)"
                       dot={{ fill: "#2563eb", r: 3.5, strokeWidth: 0 }} activeDot={{ r: 5, fill: "#4f46e5" }} />
                   </AreaChart>
@@ -315,28 +321,25 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
                     <Trophy className="w-4 h-4 text-amber-500" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-slate-800 text-sm">个人最高纪录</h2>
-                    <p className="text-xs text-slate-400">PR 排行榜</p>
+                    <h2 className="font-bold text-zinc-100 text-sm">个人最高纪录</h2>
+                    <p className="text-xs text-zinc-300">仅统计力量训练部位最高重量</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {prEntries.map(([key, w]) => {
-                    const [muscle, exercise] = key.split("|");
+                  {prEntries.map(([muscle, info]) => {
                     const base = normalizeMuscle(muscle);
                     const mc = MUSCLE_COLORS[base];
-                    const hex = MUSCLE_HEX[base];
-                    const isCardio = muscle.includes("有氧");
                     return (
-                      <div key={key}
-                        className={`p-3 rounded-2xl border flex items-center justify-between gap-2 ${mc?.bg} ${mc?.border}`}>
+                      <div key={muscle}
+                        className={`p-3 rounded-2xl border flex items-center justify-between gap-2 backdrop-blur-sm ${mc?.bg} ${mc?.border}`}>
                         <div className="min-w-0">
-                          <div className="text-xs text-slate-500 flex items-center gap-1">
+                          <div className="text-xs text-zinc-300 flex items-center gap-1">
                             <span>{MUSCLE_EMOJI[base]}</span>{muscle}
                           </div>
-                          <div className="font-bold text-slate-800 text-sm truncate">{exercise}</div>
+                          <div className="font-bold text-zinc-100 text-sm truncate">{info.exercise}</div>
                         </div>
-                        <div className="font-black text-sm flex-shrink-0" style={{ color: hex }}>
-                          {w}{isCardio ? "min" : "kg"}
+                        <div className="font-black text-sm flex-shrink-0 text-lime-300">
+                          {info.weight}kg
                         </div>
                       </div>
                     );
@@ -407,7 +410,7 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
                               <div key={i} className={`p-3.5 rounded-xl border ${mc?.bg} ${mc?.border}`}>
                                 <div className="flex items-center gap-2 mb-2.5">
                                   <span className="text-base">{MUSCLE_EMOJI[base]}</span>
-                                  <span className="font-bold text-slate-800 text-sm">{r.exercise}</span>
+                                  <span className="font-bold text-zinc-100 text-sm">{r.exercise}</span>
                                   <span className={`ml-auto text-xs font-semibold ${mc?.text}`}>{r.muscle}</span>
                                   <button
                                     onClick={() => {
@@ -424,8 +427,8 @@ export function HistoryPage({ onBack, workouts, onDeleteWorkout, onDeleteDateRec
                                 <div className="flex flex-wrap gap-1.5">
                                   {r.sets.map((set, si) => (
                                     <span key={si}
-                                      className="text-xs px-2.5 py-1.5 rounded-xl font-semibold border bg-white"
-                                      style={{ color: hex, borderColor: `${hex}30` }}>
+                                      className="text-xs px-2.5 py-1.5 rounded-xl font-semibold border"
+                                      style={{ color: "#f4f4f5", borderColor: `${hex}66`, background: "rgba(10,10,14,0.7)" }}>
                                       {isCardio
                                         ? `${set.duration ?? set.weight ?? 0}min`
                                         : `${set.weight ?? 0}kg×${set.reps ?? 0}`}

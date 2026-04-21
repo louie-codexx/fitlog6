@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type ChangeEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  ChevronRight, Dumbbell, Play
+  ChevronRight, Dumbbell
 } from "lucide-react";
 import type { WorkoutRecord } from "../App";
 import { BOTTOM_SPACING } from "../layoutSpacing";
@@ -84,6 +84,8 @@ export function HomePage({
     cardioMinutes: 120,
     strengthVolume: 12000,
   });
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [newUserName, setNewUserName] = useState("");
 
   const greeting = getGreeting();
   const today = new Date().toLocaleDateString("zh-CN");
@@ -185,6 +187,13 @@ export function HomePage({
     };
     reader.readAsDataURL(file);
   };
+  const submitCreateUser = () => {
+    const name = newUserName.trim();
+    if (!name) return;
+    onCreateUser(name);
+    setNewUserName("");
+    setShowCreateUserModal(false);
+  };
   const getGoalPercent = (current: number, target: number) => {
     if (!target || target <= 0) return 0;
     return Math.min(100, Math.round((current / target) * 100));
@@ -197,8 +206,15 @@ export function HomePage({
   const normalizeMuscle = (muscle: string) => (muscle.includes("有氧") ? "有氧" : muscle);
 
   // Week ring visualization
+  const startOfWeek = (() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - d.getDay());
+    return d;
+  })();
   const weekDays7 = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(Date.now() - (6 - i) * 86400000);
+    const d = new Date(startOfWeek);
+    d.setDate(startOfWeek.getDate() + i);
     const ds = d.toLocaleDateString("zh-CN");
     const has = workouts.some(w => new Date(w.date).toLocaleDateString("zh-CN") === ds);
     const isToday = ds === today;
@@ -261,10 +277,7 @@ export function HomePage({
               <p className="text-white font-semibold text-sm">当前用户：{currentUser}</p>
               <div className="flex gap-2">
                 <button
-                  onClick={() => {
-                    const name = prompt("请输入新用户名");
-                    if (name) onCreateUser(name);
-                  }}
+                  onClick={() => setShowCreateUserModal(true)}
                   className="h-8 px-2.5 rounded-lg bg-white/20 text-white text-xs border border-white/25"
                 >
                   新建用户
@@ -345,8 +358,8 @@ export function HomePage({
             className="grid grid-cols-3 gap-2.5"
           >
             {[
-              { value: streak, label: "连续天", icon: "🔥", color: "bg-black/25" },
-              { value: weekDays, label: "本周天", icon: "📅", color: "bg-black/25" },
+              { value: streak, label: `连续${streak}天`, icon: "🔥", color: "bg-black/25" },
+              { value: weekDays, label: `本周${weekDays}天`, icon: "📅", color: "bg-black/25" },
               { value: workouts.length, label: "总记录", icon: "⚡", color: "bg-black/25" },
             ].map(s => (
               <div key={s.label}
@@ -389,9 +402,6 @@ export function HomePage({
               animate={{ x: ["-120%", "220%"] }}
               transition={{ repeat: Infinity, duration: 3.5, ease: "linear", repeatDelay: 2 }}
             />
-            <div className="relative w-11 h-11 rounded-2xl bg-black/15 flex items-center justify-center">
-              <Play className="w-5 h-5 text-black ml-0.5" />
-            </div>
             <div className="relative text-left">
               <div className="text-black font-black text-xl">开始训练</div>
               <div className="text-black/70 text-xs">点击即可开始记录</div>
@@ -488,18 +498,23 @@ export function HomePage({
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}
             className="mb-7 p-5 rounded-2xl border border-indigo-100 relative overflow-hidden"
-            style={{ background: "linear-gradient(135deg, #141420, #10101a)", boxShadow: "0 2px 16px rgba(124,58,237,0.22)" }}
+            style={{ background: "linear-gradient(135deg, #151522, #0f101b)", boxShadow: "0 6px 24px rgba(124,58,237,0.24)" }}
           >
-            <div className="absolute -right-3 -top-3 text-8xl opacity-8 select-none">"</div>
+            <div className="absolute -right-3 -top-3 text-8xl opacity-10 select-none">"</div>
+            <div className="absolute left-0 top-0 h-full w-1.5 bg-lime-300/90" />
             <AnimatePresence mode="wait">
               {quoteVisible && (
                 <motion.div key={quoteIdx}
                   initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
                   transition={{ duration: 0.25 }}
-                  className="flex items-start gap-3 relative"
+                  className="flex items-start gap-3 relative pl-1"
                 >
-                  <span className="text-2xl flex-shrink-0 mt-0.5">{QUOTES[quoteIdx].icon}</span>
-                  <p className="text-slate-700 text-sm leading-relaxed">{QUOTES[quoteIdx].text}</p>
+                  <div className="w-10 h-10 rounded-xl border border-lime-300/35 bg-lime-300/10 flex items-center justify-center text-xl flex-shrink-0 mt-0.5 shadow-[0_0_18px_rgba(201,255,47,0.2)]">
+                    {QUOTES[quoteIdx].icon}
+                  </div>
+                  <p className="text-zinc-100 text-[1.18rem] font-semibold leading-relaxed tracking-[0.01em]">
+                    {QUOTES[quoteIdx].text}
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -550,6 +565,49 @@ export function HomePage({
           )}
         </div>
       </div>
+      <AnimatePresence>
+        {showCreateUserModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowCreateUserModal(false)}
+          >
+            <motion.div
+              initial={{ y: 20, scale: 0.96, opacity: 0 }}
+              animate={{ y: 0, scale: 1, opacity: 1 }}
+              exit={{ y: 12, scale: 0.98, opacity: 0 }}
+              className="w-full max-w-sm rounded-2xl border border-zinc-700 bg-zinc-900 p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-zinc-100 font-black text-lg">新建用户</h3>
+              <p className="text-zinc-300 text-xs mt-1">请输入新的用户名</p>
+              <input
+                value={newUserName}
+                onChange={(e) => setNewUserName(e.target.value)}
+                placeholder="例如：小王"
+                autoFocus
+                className="mt-3 w-full h-10 rounded-xl border border-zinc-600 bg-zinc-800 px-3 text-sm text-zinc-100 placeholder:text-zinc-400 outline-none"
+              />
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setShowCreateUserModal(false)}
+                  className="h-10 rounded-xl border border-zinc-600 bg-zinc-800 text-zinc-200 font-semibold"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={submitCreateUser}
+                  className="h-10 rounded-xl bg-lime-300 text-black font-black"
+                >
+                  确定
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

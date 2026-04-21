@@ -156,6 +156,10 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
   const [prFlash, setPrFlash] = useState<{ name: string; value: number; isCardio: boolean } | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [recordFlash, setRecordFlash] = useState<{ text: string; tone: string } | null>(null);
+  const [showCustomExerciseModal, setShowCustomExerciseModal] = useState(false);
+  const [customExerciseName, setCustomExerciseName] = useState("");
+  const [customExerciseTip, setCustomExerciseTip] = useState("");
+  const [customExerciseCardio, setCustomExerciseCardio] = useState(false);
   const startTimeRef = useRef(Date.now());
 
   useEffect(() => {
@@ -179,13 +183,20 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
     setPickerMuscle(null);
   };
   const handleCustomExercise = (isCardio: boolean) => {
-    const customName = prompt("请输入自定义动作名称");
-    if (!customName || !customName.trim()) return;
-    const customTip = prompt("可选：请输入动作提示")?.trim() || "自定义动作，请注意动作标准与安全。";
+    setCustomExerciseCardio(isCardio);
+    setCustomExerciseName("");
+    setCustomExerciseTip("");
+    setShowCustomExerciseModal(true);
+  };
+  const submitCustomExercise = () => {
+    const name = customExerciseName.trim();
+    if (!name) return;
+    const tip = customExerciseTip.trim() || "自定义动作，请注意动作标准与安全。";
     handleSelectExercise(
-      { name: customName.trim(), icon: isCardio ? "📝" : "✍️", tip: customTip },
-      isCardio
+      { name, icon: customExerciseCardio ? "📝" : "✍️", tip },
+      customExerciseCardio
     );
+    setShowCustomExerciseModal(false);
   };
 
   const triggerPR = (exerciseName: string, value: number, isCardio: boolean) => {
@@ -783,6 +794,58 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCustomExerciseModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[95] bg-black/65 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowCustomExerciseModal(false)}
+          >
+            <motion.div
+              initial={{ y: 20, scale: 0.96, opacity: 0 }}
+              animate={{ y: 0, scale: 1, opacity: 1 }}
+              exit={{ y: 10, scale: 0.98, opacity: 0 }}
+              className="w-full max-w-md rounded-2xl border border-zinc-700 bg-zinc-900 p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-zinc-100 font-black text-lg">自定义动作</h3>
+              <p className="text-zinc-300 text-xs mt-1">添加一个{customExerciseCardio ? "有氧" : "力量"}动作，后续可直接选择</p>
+              <div className="mt-3 space-y-2.5">
+                <input
+                  value={customExerciseName}
+                  onChange={(e) => setCustomExerciseName(e.target.value)}
+                  placeholder="动作名称（必填）"
+                  autoFocus
+                  className="w-full h-10 rounded-xl border border-zinc-600 bg-zinc-800 px-3 text-sm text-zinc-100 placeholder:text-zinc-400 outline-none"
+                />
+                <input
+                  value={customExerciseTip}
+                  onChange={(e) => setCustomExerciseTip(e.target.value)}
+                  placeholder="动作提示（可选）"
+                  className="w-full h-10 rounded-xl border border-zinc-600 bg-zinc-800 px-3 text-sm text-zinc-100 placeholder:text-zinc-400 outline-none"
+                />
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setShowCustomExerciseModal(false)}
+                  className="h-10 rounded-xl border border-zinc-600 bg-zinc-800 text-zinc-200 font-semibold"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={submitCustomExercise}
+                  className="h-10 rounded-xl bg-lime-300 text-black font-black"
+                >
+                  添加
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
