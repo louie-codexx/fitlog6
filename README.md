@@ -1,7 +1,7 @@
 
 # FitLog 健身记录网页
 
-This project is based on a Figma design and implemented with Vite + React.
+这是我的第一个利用vibe coding的小项目
 
 ## Local development
 
