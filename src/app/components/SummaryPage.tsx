@@ -51,8 +51,6 @@ interface SummaryPageProps {
 }
 
 export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
-  const [activeMilestoneKey, setActiveMilestoneKey] = useState<string | null>(null);
-  const [modalMilestoneKey, setModalMilestoneKey] = useState<string | null>(null);
   const [compareStartKey, setCompareStartKey] = useState<string | null>(null);
   const [compareEndKey, setCompareEndKey] = useState<string | null>(null);
   const normalizeMuscle = (muscle: string) => (muscle.includes("有氧") ? "有氧" : muscle);
@@ -251,93 +249,6 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
     { label: "力量总量", first: Math.round(startMonthMetrics.strengthVolume), current: Math.round(endMonthMetrics.strengthVolume), unit: "kg" },
     { label: "有氧时长", first: Math.round(startMonthMetrics.cardioMinutes), current: Math.round(endMonthMetrics.cardioMinutes), unit: "min" },
   ];
-
-  const milestones = (() => {
-    if (!sortedWorkouts.length) return [] as Array<{
-      key: string;
-      title: string;
-      desc: string;
-      date: string;
-      details: string[];
-    }>;
-    const firstDate = new Date(sortedWorkouts[0].date);
-    const dateKey = (d: string | Date) => new Date(d).toLocaleDateString("zh-CN");
-    const getDayDetails = (d: string | Date) => {
-      const key = dateKey(d);
-      const dayRecords = sortedWorkouts.filter(w => dateKey(w.date) === key);
-      return dayRecords.slice(0, 6).map(r => {
-        const isCardio = r.muscle.includes("有氧");
-        const best = isCardio
-          ? Math.max(...r.sets.map(s => s.duration ?? s.weight ?? 0), 0)
-          : Math.max(...r.sets.map(s => s.weight ?? 0), 0);
-        return `${r.exercise} · ${r.muscle} · ${r.sets.length}组 · 峰值${best}${isCardio ? "min" : "kg"}`;
-      });
-    };
-    const firstPRIdx = sortedWorkouts.findIndex((w, idx, arr) => {
-      if (idx === 0) return false;
-      const isCardio = w.muscle.includes("有氧");
-      const curMax = Math.max(...w.sets.map(s => isCardio ? (s.duration ?? s.weight ?? 0) : (s.weight ?? 0)), 0);
-      const prev = arr
-        .slice(0, idx)
-        .filter(p => p.exercise === w.exercise);
-      if (!prev.length) return false;
-      const prevMax = Math.max(...prev.flatMap(p => p.sets.map(s => isCardio ? (s.duration ?? s.weight ?? 0) : (s.weight ?? 0))), 0);
-      return curMax > prevMax;
-    });
-    let strengthAcc = 0;
-    let cardioAcc = 0;
-    let strengthMilestoneDate = "";
-    let cardioMilestoneDate = "";
-    for (const w of sortedWorkouts) {
-      if (w.muscle.includes("有氧")) {
-        cardioAcc += w.sets.reduce((s, set) => s + (set.duration ?? set.weight ?? 0), 0);
-        if (!cardioMilestoneDate && cardioAcc >= 300) cardioMilestoneDate = w.date;
-      } else {
-        strengthAcc += w.sets.reduce((s, set) => s + (set.weight ?? 0) * (set.reps ?? 0), 0);
-        if (!strengthMilestoneDate && strengthAcc >= 10000) strengthMilestoneDate = w.date;
-      }
-    }
-    const formatDate = (d: string | Date) => new Date(d).toLocaleDateString("zh-CN");
-    const list = [
-      {
-        key: `start-${formatDate(firstDate)}`,
-        title: "开启训练旅程",
-        desc: "完成第一条训练记录",
-        date: formatDate(firstDate),
-        details: getDayDetails(firstDate),
-      },
-      ...(firstPRIdx > -1
-        ? [{
-            key: `pr-${formatDate(sortedWorkouts[firstPRIdx].date)}`,
-            title: "首次突破 PR",
-            desc: `${sortedWorkouts[firstPRIdx].exercise} 刷新纪录`,
-            date: formatDate(sortedWorkouts[firstPRIdx].date),
-            details: getDayDetails(sortedWorkouts[firstPRIdx].date),
-          }]
-        : []),
-      ...(strengthMilestoneDate
-        ? [{
-            key: `strength-${formatDate(strengthMilestoneDate)}`,
-            title: "力量累计破万",
-            desc: "累计力量总量达到 10000kg",
-            date: formatDate(strengthMilestoneDate),
-            details: getDayDetails(strengthMilestoneDate),
-          }]
-        : []),
-      ...(cardioMilestoneDate
-        ? [{
-            key: `cardio-${formatDate(cardioMilestoneDate)}`,
-            title: "心肺里程碑",
-            desc: "累计有氧时长达到 300 分钟",
-            date: formatDate(cardioMilestoneDate),
-            details: getDayDetails(cardioMilestoneDate),
-          }]
-        : []),
-    ];
-    return list;
-  })();
-  const activeMilestone = milestones.find(m => m.key === activeMilestoneKey) ?? milestones[0] ?? null;
-  const modalMilestone = milestones.find(m => m.key === modalMilestoneKey) ?? null;
 
   // Muscle distribution pie
   const muscleDist = monthWorkouts.reduce((acc, w) => {
@@ -575,83 +486,6 @@ export function SummaryPage({ onBack, workouts }: SummaryPageProps) {
                   })}
                 </div>
               </motion.div>
-            )}
-
-            {milestones.length > 0 && (
-              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.255 }}
-                className="bg-white rounded-3xl border border-slate-100 p-5 mb-4"
-                style={{ boxShadow: "0 4px 24px rgba(79,70,229,0.08)" }}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="inline-block h-5 w-1 rounded-full bg-lime-300 shadow-[0_0_10px_rgba(201,255,47,0.55)]" />
-                    <h2 className="font-black text-zinc-100 text-sm">成长里程碑</h2>
-                  </div>
-                  <span className="text-xs text-zinc-300">长期记录</span>
-                </div>
-                <div className="space-y-3">
-                  {milestones.map((m, idx) => (
-                    <button
-                      key={m.key}
-                      type="button"
-                      onClick={() => {
-                        setActiveMilestoneKey(m.key);
-                        setModalMilestoneKey(m.key);
-                      }}
-                      className={`w-full text-left rounded-2xl px-2 py-1.5 transition ${activeMilestone?.key === m.key ? "bg-lime-200/20" : "hover:bg-slate-50"}`}
-                    >
-                      <div className="flex gap-3">
-                        <div className="flex flex-col items-center">
-                          <div className="w-3 h-3 rounded-full bg-lime-300 mt-1.5" />
-                          {idx !== milestones.length - 1 && <div className="w-px flex-1 bg-lime-300/30 mt-1" />}
-                        </div>
-                        <div className="pb-2">
-                          <p className="text-sm font-bold text-slate-700">{m.title}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">{m.desc}</p>
-                          <p className="text-[11px] text-lime-300 mt-1">{m.date}</p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-3 text-xs text-lime-300">点击任意里程碑可查看故事卡详情</p>
-              </motion.div>
-            )}
-
-            {modalMilestone && (
-              <div
-                className="fixed inset-0 z-[80] bg-slate-900/45 backdrop-blur-sm flex items-end sm:items-center justify-center p-3"
-                onClick={() => setModalMilestoneKey(null)}
-              >
-                <motion.div
-                  initial={{ opacity: 0, y: 20, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className="w-full max-w-md rounded-3xl border border-indigo-200 bg-white p-5 shadow-2xl overflow-y-auto"
-                  style={{
-                    maxHeight: "calc(100vh - 2.5rem)",
-                    paddingBottom: BOTTOM_SPACING.modalContent,
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <p className="text-[11px] text-lime-300">里程碑故事卡</p>
-                  <h3 className="font-black text-slate-800 mt-1">{modalMilestone.title}</h3>
-                  <p className="text-xs text-slate-500 mt-1">{modalMilestone.desc}</p>
-                  <p className="text-xs text-lime-300 mt-1.5">{modalMilestone.date}</p>
-                  <div className="mt-3 rounded-2xl border border-indigo-100 bg-indigo-50 p-3 space-y-1.5">
-                    {modalMilestone.details.length > 0 ? modalMilestone.details.map(detail => (
-                      <p key={detail} className="text-xs text-indigo-700">{detail}</p>
-                    )) : (
-                      <p className="text-xs text-indigo-700">当天暂无可展示动作明细。</p>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setModalMilestoneKey(null)}
-                    className="mt-4 w-full rounded-xl bg-lime-300 text-black py-2 text-sm font-bold"
-                  >
-                    关闭
-                  </button>
-                </motion.div>
-              </div>
             )}
 
             {/* Weekly bar chart */}

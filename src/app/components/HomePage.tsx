@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import type { WorkoutRecord } from "../App";
 import { BOTTOM_SPACING } from "../layoutSpacing";
+import { estimateWorkoutCalories } from "../calories";
 
 const QUOTES = [
   { text: "Just Do It.", icon: "✔️" },
@@ -52,6 +53,8 @@ interface HomePageProps {
   onSwitchUser: (user: string) => void;
   onCreateUser: (name: string) => void;
   onDeleteCurrentUser: () => void;
+  bodyWeightKg: number;
+  onBodyWeightChange: (weight: number) => void;
 }
 
 export function HomePage({
@@ -62,6 +65,8 @@ export function HomePage({
   onSwitchUser,
   onCreateUser,
   onDeleteCurrentUser,
+  bodyWeightKg,
+  onBodyWeightChange,
 }: HomePageProps) {
   const [quoteIdx, setQuoteIdx] = useState(() => {
     const prev = Number(localStorage.getItem(QUOTE_INDEX_KEY));
@@ -79,7 +84,7 @@ export function HomePage({
   const [goals, setGoals] = useState({
     weeklySessions: 4,
     cardioMinutes: 120,
-    strengthVolume: 12000,
+    caloriesBurn: 1800,
   });
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [newUserName, setNewUserName] = useState("");
@@ -101,9 +106,7 @@ export function HomePage({
   const weekCardioMinutes = weekWorkouts
     .filter(w => w.muscle.includes("有氧"))
     .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.duration ?? set.weight ?? 0), 0), 0);
-  const weekStrengthVolume = weekWorkouts
-    .filter(w => !w.muscle.includes("有氧"))
-    .reduce((sum, w) => sum + w.sets.reduce((s, set) => s + (set.weight ?? 0) * (set.reps ?? 0), 0), 0);
+  const weekCaloriesBurn = weekWorkouts.reduce((sum, w) => sum + estimateWorkoutCalories(w, bodyWeightKg), 0);
 
   const streak = (() => {
     let count = 0;
@@ -135,7 +138,21 @@ export function HomePage({
     const savedGoals = localStorage.getItem(GOALS_KEY);
     if (savedGoals) {
       try {
-        setGoals(prev => ({ ...prev, ...JSON.parse(savedGoals) }));
+        const parsed = JSON.parse(savedGoals) as {
+          weeklySessions?: number;
+          cardioMinutes?: number;
+          caloriesBurn?: number;
+          strengthVolume?: number;
+        };
+        setGoals(prev => ({
+          ...prev,
+          ...parsed,
+          caloriesBurn: parsed.caloriesBurn ?? (
+            typeof parsed.strengthVolume === "number"
+              ? Math.max(300, Math.round(parsed.strengthVolume / 8))
+              : prev.caloriesBurn
+          ),
+        }));
       } catch {
         // ignore parse failure
       }
@@ -205,7 +222,7 @@ export function HomePage({
   const goalProgress = [
     { label: "本周训练次数", current: weekSessions, target: goals.weeklySessions, unit: "次", color: "#2563eb" },
     { label: "本周有氧时长", current: Math.round(weekCardioMinutes), target: goals.cardioMinutes, unit: "min", color: "#0891b2" },
-    { label: "本周力量总量", current: Math.round(weekStrengthVolume), target: goals.strengthVolume, unit: "kg", color: "#7c3aed" },
+    { label: "本周卡路里消耗", current: Math.round(weekCaloriesBurn), target: goals.caloriesBurn, unit: "kcal", color: "#7c3aed" },
   ];
   const normalizeMuscle = (muscle: string) => (muscle.includes("有氧") ? "有氧" : muscle);
 
@@ -312,6 +329,18 @@ export function HomePage({
                   {user}
                 </button>
               ))}
+            </div>
+            <div className="mt-3 rounded-xl border border-white/20 bg-white/10 px-3 py-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-zinc-300">个人体重（用于卡路里计算）</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={bodyWeightKg}
+                  onChange={(e) => onBodyWeightChange(Math.max(1, Number(e.target.value) || 1))}
+                  className="h-8 w-20 rounded-lg border border-white/25 bg-black/20 px-2 text-sm text-zinc-100"
+                />
+              </div>
             </div>
           </div>
 
@@ -438,11 +467,11 @@ export function HomePage({
               />
               <input
                 type="number"
-                min={100}
-                value={goals.strengthVolume}
-                onChange={(e) => setGoals(prev => ({ ...prev, strengthVolume: Math.max(100, Number(e.target.value) || 100) }))}
+                min={300}
+                value={goals.caloriesBurn}
+                onChange={(e) => setGoals(prev => ({ ...prev, caloriesBurn: Math.max(300, Number(e.target.value) || 300) }))}
                 className="h-9 px-2 rounded-lg border border-slate-200 text-xs"
-                title="每周力量总量目标"
+                title="每周卡路里消耗目标"
               />
             </div>
             <div className="space-y-4">

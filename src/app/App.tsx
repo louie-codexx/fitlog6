@@ -4,11 +4,13 @@ import { WorkoutPage } from "./components/WorkoutPage";
 import { HistoryPage } from "./components/HistoryPage";
 import { SummaryPage } from "./components/SummaryPage";
 import { BOTTOM_SPACING } from "./layoutSpacing";
+import { DEFAULT_BODY_WEIGHT_KG } from "./calories";
 
 export interface WorkoutSet {
   weight?: number;
   reps?: number;
   duration?: number;
+  calories?: number;
   intensity?: "easy" | "medium" | "hard";
 }
 
@@ -22,6 +24,7 @@ export interface WorkoutRecord {
 
 type Page = "home" | "workout" | "history" | "summary";
 type UserStore = Record<string, WorkoutRecord[]>;
+type UserWeights = Record<string, number>;
 const STORE_KEY = "fitlog-user-store-v1";
 const LEGACY_KEY = "fitness-workouts";
 
@@ -29,6 +32,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("home");
   const [activeUser, setActiveUser] = useState("默认用户");
   const [userStore, setUserStore] = useState<UserStore>({ "默认用户": [] });
+  const [userWeights, setUserWeights] = useState<UserWeights>({ "默认用户": DEFAULT_BODY_WEIGHT_KG });
 
   const ensureRecordId = (records: WorkoutRecord[]): WorkoutRecord[] =>
     records.map((record, idx) => ({
@@ -40,12 +44,16 @@ export default function App() {
     const saved = localStorage.getItem(STORE_KEY);
     if (saved) {
       try {
-        const parsed = JSON.parse(saved) as { activeUser?: string; users?: UserStore };
+        const parsed = JSON.parse(saved) as { activeUser?: string; users?: UserStore; userWeights?: UserWeights };
         if (parsed?.users && Object.keys(parsed.users).length > 0) {
           const nextUsers = Object.fromEntries(
             Object.entries(parsed.users).map(([name, records]) => [name, ensureRecordId(records)])
           );
+          const nextWeights = Object.fromEntries(
+            Object.keys(nextUsers).map(name => [name, Math.max(1, parsed.userWeights?.[name] ?? DEFAULT_BODY_WEIGHT_KG)])
+          );
           setUserStore(nextUsers);
+          setUserWeights(nextWeights);
           setActiveUser(parsed.activeUser && nextUsers[parsed.activeUser] ? parsed.activeUser : Object.keys(nextUsers)[0]);
           return;
         }
@@ -60,6 +68,7 @@ export default function App() {
       try {
         const records = ensureRecordId(JSON.parse(legacy) as WorkoutRecord[]);
         setUserStore({ "默认用户": records });
+        setUserWeights({ "默认用户": DEFAULT_BODY_WEIGHT_KG });
         setActiveUser("默认用户");
       } catch (e) {
         console.error("Failed to migrate legacy workouts", e);
@@ -73,11 +82,13 @@ export default function App() {
       JSON.stringify({
         activeUser,
         users: userStore,
+        userWeights,
       })
     );
-  }, [activeUser, userStore]);
+  }, [activeUser, userStore, userWeights]);
 
   const workouts = userStore[activeUser] ?? [];
+  const currentBodyWeight = Math.max(1, userWeights[activeUser] ?? DEFAULT_BODY_WEIGHT_KG);
 
   const handleSaveWorkouts = (records: WorkoutRecord[]) => {
     setUserStore(prev => ({
@@ -109,6 +120,10 @@ export default function App() {
       if (prev[nextName]) return prev;
       return { ...prev, [nextName]: [] };
     });
+    setUserWeights(prev => {
+      if (prev[nextName]) return prev;
+      return { ...prev, [nextName]: DEFAULT_BODY_WEIGHT_KG };
+    });
     setActiveUser(nextName);
   };
 
@@ -120,8 +135,18 @@ export default function App() {
       delete next[activeUser];
       return next;
     });
+    setUserWeights(prev => {
+      const next = { ...prev };
+      delete next[activeUser];
+      return next;
+    });
     const fallback = allUsers.find(u => u !== activeUser);
     if (fallback) setActiveUser(fallback);
+  };
+
+  const handleBodyWeightChange = (weight: number) => {
+    const safeWeight = Math.max(1, weight);
+    setUserWeights(prev => ({ ...prev, [activeUser]: safeWeight }));
   };
 
   const getPersonalRecord = (muscle: string, exercise: string): number => {
@@ -176,6 +201,8 @@ export default function App() {
           onSwitchUser={setActiveUser}
           onCreateUser={handleCreateUser}
           onDeleteCurrentUser={handleDeleteCurrentUser}
+          bodyWeightKg={currentBodyWeight}
+          onBodyWeightChange={handleBodyWeightChange}
         />
       )}
       {currentPage === "workout" && (
@@ -183,6 +210,8 @@ export default function App() {
           onBack={() => setCurrentPage("home")}
           onSaveWorkouts={handleSaveWorkouts}
           getPersonalRecord={getPersonalRecord}
+          draftKey={activeUser}
+          bodyWeightKg={currentBodyWeight}
         />
       )}
       {currentPage === "history" && (

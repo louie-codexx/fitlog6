@@ -7,6 +7,7 @@ import {
 import confetti from "canvas-confetti";
 import type { WorkoutSet, WorkoutRecord } from "../App";
 import { BOTTOM_SPACING } from "../layoutSpacing";
+import { estimateSetCalories } from "../calories";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -141,16 +142,20 @@ interface WorkoutPageProps {
   onBack: () => void;
   onSaveWorkouts: (records: WorkoutRecord[]) => void;
   getPersonalRecord: (muscle: string, exercise: string) => number;
+  draftKey: string;
+  bodyWeightKg: number;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: WorkoutPageProps) {
+export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord, draftKey, bodyWeightKg }: WorkoutPageProps) {
+  const draftStorageKey = `fitlog-workout-draft-${draftKey}`;
   const [blocks, setBlocks] = useState<WorkoutBlock[]>([]);
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [pickerMuscle, setPickerMuscle] = useState<string | null>(null);
   const [weight, setWeight] = useState(0);
+  const [targetWeight, setTargetWeight] = useState(0);
   const [reps, setReps] = useState(10);
   const [intensity, setIntensity] = useState<"easy" | "medium" | "hard">("medium");
   const [prFlash, setPrFlash] = useState<{ name: string; value: number; isCardio: boolean } | null>(null);
@@ -163,20 +168,86 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
   const startTimeRef = useRef(Date.now());
 
   useEffect(() => {
+    const raw = localStorage.getItem(draftStorageKey);
+    if (!raw) return;
+    try {
+      const draft = JSON.parse(raw) as {
+        blocks?: WorkoutBlock[];
+        activeBlockId?: string | null;
+        weight?: number;
+        reps?: number;
+        intensity?: "easy" | "medium" | "hard";
+        startTime?: number;
+      };
+      if (Array.isArray(draft.blocks)) setBlocks(draft.blocks);
+      setActiveBlockId(draft.activeBlockId ?? null);
+      const initWeight = Number.isFinite(draft.weight) ? Number(draft.weight) : 0;
+      setWeight(initWeight);
+      setTargetWeight(initWeight);
+      setReps(Number.isFinite(draft.reps) ? Number(draft.reps) : 10);
+      setIntensity(draft.intensity ?? "medium");
+      if (Number.isFinite(draft.startTime) && Number(draft.startTime) > 0) {
+        startTimeRef.current = Number(draft.startTime);
+      }
+    } catch (e) {
+      console.error("Failed to restore workout draft", e);
+    }
+  }, [draftStorageKey]);
+
+  useEffect(() => {
     const t = setInterval(() => setElapsed(Math.floor((Date.now() - startTimeRef.current) / 60000)), 15000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(draftStorageKey, JSON.stringify({
+      blocks,
+      activeBlockId,
+      weight,
+      reps,
+      intensity,
+      startTime: startTimeRef.current,
+    }));
+  }, [activeBlockId, blocks, draftStorageKey, intensity, reps, weight]);
+
+  useEffect(() => {
+    if (Math.abs(targetWeight - weight) < 0.05) return;
+    const iv = window.setInterval(() => {
+      setWeight(prev => {
+        const diff = targetWeight - prev;
+        if (Math.abs(diff) < 0.08) {
+          window.clearInterval(iv);
+          return targetWeight;
+        }
+        return Number((prev + diff * 0.28).toFixed(2));
+      });
+    }, 16);
+    return () => window.clearInterval(iv);
+  }, [targetWeight, weight]);
 
   const activeBlock = blocks.find(b => b.id === activeBlockId) ?? null;
   const pickerMuscleData = muscleGroups.find(m => m.name === pickerMuscle);
   const totalSets = blocks.reduce((s, b) => s + b.sets.length, 0);
   const canFinish = blocks.some(b => b.sets.length > 0);
+  const sliderMax = activeBlock?.isCardio
+    ? 180
+    : activeBlock?.muscle.includes("腿")
+      ? 300
+      : 100;
+
+  useEffect(() => {
+    if (!activeBlock) return;
+    if (targetWeight > sliderMax) {
+      setTargetWeight(sliderMax);
+    }
+  }, [activeBlock, sliderMax, targetWeight]);
 
   const handleSelectExercise = (exercise: ExerciseData, isCardio: boolean) => {
     const id = `block-${Date.now()}`;
     setBlocks(prev => [...prev, { id, muscle: pickerMuscle!, exercise, sets: [], isCardio }]);
     setActiveBlockId(id);
     setWeight(0);
+    setTargetWeight(0);
     setReps(isCardio ? 6 : 10);
     setIntensity("medium");
     setShowPicker(false);
@@ -209,27 +280,34 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
 
   const addSet = () => {
     if (!activeBlockId || !activeBlock) return;
-    if (activeBlock.isCardio && weight <= 0) {
+    const inputWeight = Number(targetWeight.toFixed(2));
+    if (activeBlock.isCardio && inputWeight <= 0) {
       alert("请先设置有氧时长（分钟）");
       return;
     }
-    if (!activeBlock.isCardio && (weight <= 0 || reps <= 0)) {
+    if (!activeBlock.isCardio && (inputWeight <= 0 || reps <= 0)) {
       alert("请先设置有效的重量和次数");
       return;
     }
+    const calories = estimateSetCalories({
+      muscle: activeBlock.muscle,
+      exercise: activeBlock.exercise.name,
+      set: activeBlock.isCardio ? { duration: inputWeight, intensity } : { weight: inputWeight, reps },
+      bodyWeightKg,
+    });
     const newSet: WorkoutSet = activeBlock.isCardio
-      ? { duration: weight, intensity }
-      : { weight, reps };
+      ? { duration: inputWeight, intensity, calories: Number(calories.toFixed(1)) }
+      : { weight: inputWeight, reps, calories: Number(calories.toFixed(1)) };
     setBlocks(prev => prev.map(b => b.id === activeBlockId ? { ...b, sets: [...b.sets, newSet] } : b));
     setRecordFlash({
       text: activeBlock.isCardio
-        ? `+1 组 ${weight} 分钟已记录`
-        : `+1 组 ${weight}kg × ${reps}次`,
+        ? `+1 组 ${inputWeight} 分钟已记录`
+        : `+1 组 ${inputWeight}kg × ${reps}次`,
       tone: activeBlock.isCardio ? "#0891b2" : (muscleGroups.find(m => m.name === activeBlock.muscle)?.color ?? "#2563eb"),
     });
     setTimeout(() => setRecordFlash(null), 1200);
     const pr = getPersonalRecord(activeBlock.muscle, activeBlock.exercise.name);
-    if (weight > pr) triggerPR(activeBlock.exercise.name, weight, activeBlock.isCardio);
+    if (inputWeight > pr) triggerPR(activeBlock.exercise.name, inputWeight, activeBlock.isCardio);
   };
 
   const undoLastSet = (blockId: string) => {
@@ -256,7 +334,18 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
         sets: b.sets,
       }));
     if (records.length > 0) onSaveWorkouts(records);
+    localStorage.removeItem(draftStorageKey);
     onBack();
+  };
+
+  const handleAttemptBack = () => {
+    if (!canFinish) {
+      onBack();
+      return;
+    }
+    if (confirm("当前训练尚未保存，确定离开吗？建议先点击“完成训练”保存。")) {
+      onBack();
+    }
   };
 
   return (
@@ -307,7 +396,7 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
-              onClick={onBack}
+              onClick={handleAttemptBack}
               className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm"
             >
               <ArrowLeft className="w-4 h-4 text-slate-600" />
@@ -361,6 +450,15 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
         className="max-w-lg mx-auto px-4 py-5"
         style={{ paddingBottom: BOTTOM_SPACING.pageContent }}
       >
+        {canFinish && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-3 rounded-xl border border-lime-300/40 bg-lime-300/10 px-3 py-2 text-xs text-lime-300"
+          >
+            温馨提醒：训练结束后记得点击右上角“完成训练”进行保存。
+          </motion.div>
+        )}
         <div className="space-y-3">
           <AnimatePresence mode="popLayout">
             {blocks.map(block => {
@@ -464,11 +562,12 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                               <input
                                 type="range"
                                 min={0}
-                                max={block.isCardio ? 180 : 300}
+                                max={block.isCardio ? 180 : block.muscle.includes("腿") ? 300 : 100}
                                 step={block.isCardio ? 1 : 2.5}
-                                value={weight}
-                                onChange={(e) => setWeight(Number(e.target.value))}
+                                value={targetWeight}
+                                onChange={(e) => setTargetWeight(Number(e.target.value))}
                                 className="w-full accent-indigo-600"
+                                style={{ transition: "all 180ms cubic-bezier(0.22, 1, 0.36, 1)" }}
                               />
                               <div className="mt-2 flex items-center justify-between gap-2">
                                 <span className="text-xs text-slate-400">默认从 0 开始，可滑动调节</span>
@@ -477,7 +576,11 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord }: Worko
                                   min={0}
                                   value={weight}
                                   step={block.isCardio ? 1 : 0.5}
-                                  onChange={(e) => setWeight(Math.max(0, Number(e.target.value) || 0))}
+                                  onChange={(e) => {
+                                    const next = Math.max(0, Number(e.target.value) || 0);
+                                    setWeight(next);
+                                    setTargetWeight(next);
+                                  }}
                                   className="w-24 h-8 rounded-lg border border-slate-200 px-2 text-sm text-slate-700"
                                 />
                               </div>
