@@ -570,7 +570,11 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord, draftKe
                                 style={{ transition: "all 180ms cubic-bezier(0.22, 1, 0.36, 1)" }}
                               />
                               <div className="mt-2 flex items-center justify-between gap-2">
-                                <span className="text-xs text-slate-400">默认从 0 开始，可滑动调节</span>
+                                <span className="text-xs text-slate-400">
+                                  {block.isCardio
+                                    ? "默认从 0 开始，可滑动调节"
+                                    : "默认从 0 开始，可滑动调节（也可在右侧自定义输入重量）"}
+                                </span>
                                 <input
                                   type="number"
                                   min={0}
@@ -584,6 +588,11 @@ export function WorkoutPage({ onBack, onSaveWorkouts, getPersonalRecord, draftKe
                                   className="w-24 h-8 rounded-lg border border-slate-200 px-2 text-sm text-slate-700"
                                 />
                               </div>
+                              {!block.isCardio && (
+                                <p className="mt-2 text-xs text-lime-300">
+                                  提醒：滑条用于快速调节；若需更大或更精确重量，请直接在输入框自定义填写。
+                                </p>
+                              )}
                             </div>
                           </div>
 
